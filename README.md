@@ -84,3 +84,9 @@ DELETE /<reference>
 ```
 
 Example `curl -X DELETE "localhost:8080/myref`
+
+
+TODO
+====
+
+1. monitor for "dead" backends, and disable them when they are down. (#hint, use sdiff in redis)

@@ -1,18 +1,16 @@
--- Connect to Redis
 local redis = require "resty.redis"
 local red = redis:new()
 red:set_timeout(1000)
-local ok, err = red:connect("127.0.0.1", 6379)
+local ok, err = red:connect('127.0.0.1', 6379)
 if not ok then
     ngx.say("Failed to connect to Redis: ", err)
-    return
+    ngx.exit(500)
 end
 
-name = ngx.var.uri:gsub('/','')
-ngx.log(ngx.ERR, "Requested Asset: " .. name)
-args = ngx.req.get_uri_args()
-host = args['host']
-port = args['port']
+local name = ngx.var.uri:gsub('/','')
+local args = ngx.req.get_uri_args()
+local host = args['host']
+local port = args['port']
 
 local reqType = ngx.req.get_method()
 
@@ -102,4 +100,3 @@ else
     ngx.log(ngx.ERR, "INVALID REQUEST")
     ngx.say("Invalid request")
 end
-

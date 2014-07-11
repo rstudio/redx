@@ -1,0 +1,57 @@
+DEPENDENCIES
+  git
+  openresty
+    git: git@github.com:priestjim/chef-openresty.git
+    revision: 0c6629ddd670989b54455c71cdb81d696f475de1
+  redis
+    git: git@github.com:miah/chef-redis.git
+    revision: 5b7e8585b23dcef0de3ec6cfbb31ad75fc912d8e
+
+GRAPH
+  apt (2.4.0)
+  build-essential (2.0.4)
+  chef-sugar (2.0.0)
+  chef_handler (1.1.6)
+  discovery (0.2.2)
+  dmg (2.2.0)
+  git (4.0.2)
+    build-essential (>= 0.0.0)
+    dmg (>= 0.0.0)
+    runit (>= 1.0.0)
+    windows (>= 0.0.0)
+    yum (~> 3.0)
+    yum-epel (>= 0.0.0)
+  jemalloc (0.1.1)
+  logrotate (1.6.0)
+  ohai (2.0.1)
+  openresty (0.3.3)
+    apt (>= 0.0.0)
+    build-essential (>= 0.0.0)
+    git (>= 0.0.0)
+    jemalloc (>= 0.0.0)
+    logrotate (>= 0.0.0)
+    ohai (>= 1.1.4)
+    postgresql (>= 0.0.0)
+    yum (>= 0.0.0)
+  openssl (2.0.0)
+    chef-sugar (>= 0.0.0)
+  postgresql (3.4.1)
+    apt (>= 1.9.0)
+    build-essential (>= 0.0.0)
+    openssl (>= 0.0.0)
+  redis (2.1.1)
+    build-essential (>= 0.0.0)
+    discovery (>= 0.2.0)
+    runit (>= 0.0.0)
+    stunnel (>= 2.0.0)
+    yum (>= 0.0.0)
+  runit (1.5.10)
+    build-essential (>= 0.0.0)
+    yum (~> 3.0)
+    yum-epel (>= 0.0.0)
+  stunnel (2.1.0)
+  windows (1.31.0)
+    chef_handler (>= 0.0.0)
+  yum (3.2.2)
+  yum-epel (0.3.6)
+    yum (~> 3.0)

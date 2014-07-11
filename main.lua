@@ -34,8 +34,6 @@ ngx.log(ngx.ERR, account_name)
 -- get random upstream in key (aka name)
 local res, err = red:srandmember(account_name .. "_" .. app_name)
 if res then
-    ngx.log(ngx.ERR, res)
-    ngx.log(ngx.ERR, type(res))
     if type(res) == 'string' then
         backend = res:split(',')
         backend_name = backend[1]

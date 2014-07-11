@@ -35,13 +35,23 @@ ngx.log(ngx.ERR, account_name)
 local res, err = red:srandmember(account_name .. "_" .. app_name)
 if res then
     ngx.log(ngx.ERR, res)
-    backend = res:split(',')
-    backend_name = backend[1]
-    backend_host = backend[2]
-    backend_port = backend[3]
-    ngx.header["X-Proxy-Backend-Name"] =  backend_name
-    ngx.header["X-Proxy-Backend-Host"] =  backend_host
-    ngx.header["X-Proxy-Backend-Port"] =  backend_port
-    ngx.var.upstream = backend_host .. ":" .. backend_port
+    ngx.log(ngx.ERR, type(res))
+    if type(res) == 'string' then
+        backend = res:split(',')
+        backend_name = backend[1]
+        backend_host = backend[2]
+        backend_port = backend[3]
+        ngx.header["X-Proxy-Cache-Hit"] = "true"
+        ngx.header["X-Proxy-Backend-Name"] =  backend_name
+        ngx.header["X-Proxy-Backend-Host"] =  backend_host
+        ngx.header["X-Proxy-Backend-Port"] =  backend_port
+        ngx.header["X-Lucid-Account-Name"] = account_name
+        ngx.header["X-Proxy-App-Name"] = app_name
+        ngx.var.upstream = backend_host .. ":" .. backend_port
+    else
+        ngx.header["X-Proxy-Cache-Hit"] = "false"
+        ngx.header["X-Lucid-Account-Name"] = account_name
+        ngx.header["X-Proxy-App-Name"] = app_name
+    end
     ngx.print()
 end

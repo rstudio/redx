@@ -44,12 +44,12 @@ if res then
         ngx.header["X-Proxy-Backend-Host"] =  backend_host
         ngx.header["X-Proxy-Backend-Port"] =  backend_port
         ngx.header["X-Lucid-Account-Name"] = account_name
-        ngx.header["X-Proxy-App-Name"] = app_name
+        ngx.header["X-Lucid-App-Name"] = app_name
         ngx.var.upstream = backend_host .. ":" .. backend_port
     else
         ngx.header["X-Proxy-Cache-Hit"] = "false"
         ngx.header["X-Lucid-Account-Name"] = account_name
-        ngx.header["X-Proxy-App-Name"] = app_name
+        ngx.header["X-Lucid-App-Name"] = app_name
     end
     ngx.print()
 end

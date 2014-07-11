@@ -35,5 +35,11 @@ ngx.log(ngx.ERR, account_name)
 local res, err = red:srandmember(account_name .. "_" .. app_name)
 if res then
     ngx.log(ngx.ERR, res)
+    backend = res:split(':')
+    ngx.log(ngx.ERR, "Host " .. backend[1])
+    ngx.log(ngx.ERR, "Port " .. backend[2])
+    ngx.header["X-Proxy-Backend-Host"] =  backend[1]
+    ngx.header["X-Proxy-Backend-Port"] =  backend[2]
     ngx.var.upstream = res
+    ngx.print()
 end

@@ -9,8 +9,18 @@ end
 
 local name = ngx.var.uri:gsub('/','')
 local args = ngx.req.get_uri_args()
-local host = args['host']
-local port = args['port']
+
+-- get backends (enforce backends is always a table)
+local backends = {}
+if type(args['backend']) == 'table' then
+    for key,val in pairs(args['backend']) do
+        ngx.log(ngx.ERR, "Add " .. val)
+        table.insert(backends, val)
+    end
+else
+    ngx.log(ngx.ERR, "Add " .. args['backend'])
+    table.insert(backends, args['backend'])
+end
 
 local reqType = ngx.req.get_method()
 
@@ -49,7 +59,9 @@ if reqType == "GET" then
 elseif reqType == "POST" then
     ngx.log(ngx.ERR, "POST REQUEST")
     red:init_pipeline()
-    red:sadd(name, host .. ":" .. port)
+    for i,backend in pairs(backends) do
+        red:sadd(name, backend)
+    end
     local results, err = red:commit_pipeline()
     if not results then
         ngx.say("failed to commit the pipelined requests: ", err)
@@ -71,22 +83,21 @@ elseif reqType == "DELETE" then
         return
     end
 
-    if not host and not port then
+    if next (backends) == nil then
         ngx.log(ngx.ERR, 'deleting ' .. name)
-        red:init_pipeline()
-        red:del(name)
-        local results, err = red:commit_pipeline()
-        if not results then
-            ngx.say("failed to commit the pipelined requests: ", err)
+        ok, err = red:del(name)
+        if not ok then
+            ngx.say("failed to delete redis key: ", err)
             return
         else
             ngx.say("OK")
         end
-    elseif host and port then
-        ngx.log(ngx.ERR, 'deleting ' .. name .. "|" .. host .. ":" .. port)
-
+    else
         red:init_pipeline()
-        red:srem(name, host .. ":" .. port)
+        for i, backend in pairs(backends) do
+            ngx.log(ngx.ERR, 'deleting ' .. backend)
+            red:srem(name, backend)
+        end
         -- commit the change
         local results, err = red:commit_pipeline()
         if not results then

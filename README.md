@@ -61,7 +61,19 @@ POST /<reference>
     backend: "<backend_name>,<backend_host>,<backend_port>" (required, can be supplied multiple times)
 ```
 
-Example `curl -X POST "localhost:8080/myref?host=agent01&port=443"`
+Example `curl -X POST localhost:8080/myref?backend="12345,duckduckgo.com,80"`
+
+#### Replace upstream to a reference
+
+Replace all backends in a reference with a list of new backends
+
+```
+PUT /<reference>
+  @params
+    backend: "<backend_name>,<backend_host>,<backend_port>" (required, can be supplied multiple times)
+```
+
+Example `curl -X PUT localhost:8080/myref?backend="12345,duckduckgo.com,80"`
 
 #### Delete an upstream for a reference
 
@@ -71,7 +83,7 @@ DELETE /<reference>
     backend: string (required "<backend_name>,<backend_host>,<backend_port>")
 ```
 
-Example `curl -X DELETE "localhost:8080/myref?host=agent01&port=443"`
+Example `curl -X DELETE localhost:8080/myref?backend="12345,duckduckgo.com,80"`
 
 #### Delete all upstreams for reference
 

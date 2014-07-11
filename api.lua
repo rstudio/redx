@@ -60,12 +60,29 @@ elseif reqType == "POST" then
     ngx.log(ngx.ERR, "POST REQUEST")
     red:init_pipeline()
     for i,backend in pairs(backends) do
+        ngx.log(ngx.ERR, 'adding backend: ' .. backend)
         red:sadd(name, backend)
     end
     local results, err = red:commit_pipeline()
     if not results then
         ngx.say("failed to commit the pipelined requests: ", err)
         ngx.exit(500)
+    else
+        ngx.say("OK")
+    end
+elseif reqType == "PUT" then
+    ngx.log(ngx.ERR, "PUT REQUEST")
+    red:init_pipeline()
+    red:del(name)
+    for i, backend in pairs(backends) do
+        ngx.log(ngx.ERR, 'adding backend: ' .. backend)
+        red:sadd(name, backend)
+    end
+    -- commit the change
+    local results, err = red:commit_pipeline()
+    if not results then
+        ngx.say("failed to commit the pipelined requests: ", err)
+        return
     else
         ngx.say("OK")
     end

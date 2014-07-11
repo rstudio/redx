@@ -31,10 +31,8 @@ Start nginx
 
 ```bash
   # API runs on port 8081
-  # add duckduckgo as a backend to localhost_demo (localhost => account_name, demo => app_name)
-  curl -XPOST localhost:8081/localhost_demo?host=duckduckgo.com\&port=80
-  # add google as a backend also
-  curl -XPOST localhost:8081/localhost_demo?host=google.com\&port=80
+  # add duckduckgo and google as a backend to localhost_demo (localhost => account_name, demo => app_name)
+  curl -XPOST localhost:8081/localhost_demo?backend="12345,duckduckgo.com,80"\&backend="4444,google.com,80"
 
   # MAIN runs on port 8080
   # get routed to one of the backends we created
@@ -60,8 +58,7 @@ Example `curl localhost:8080/myref?randome=true`
 ```
 POST /<reference>
   @params
-    host: string (required)
-    port: integer (required)
+    backend: "<backend_name>,<backend_host>,<backend_port>" (required, can be supplied multiple times)
 ```
 
 Example `curl -X POST "localhost:8080/myref?host=agent01&port=443"`
@@ -71,8 +68,7 @@ Example `curl -X POST "localhost:8080/myref?host=agent01&port=443"`
 ```
 DELETE /<reference>
   @params
-    host: string (required)
-    port: integer (required)
+    backend: string (required "<backend_name>,<backend_host>,<backend_port>")
 ```
 
 Example `curl -X DELETE "localhost:8080/myref?host=agent01&port=443"`
@@ -89,4 +85,5 @@ Example `curl -X DELETE "localhost:8080/myref`
 TODO
 ====
 
-1. monitor for "dead" backends, and disable them when they are down. (#hint, use sdiff in redis)
+1. Support stickiness
+2. Smarter load balancing than random (ie round robin)

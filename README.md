@@ -1,4 +1,4 @@
-rpache
+red-x
 ======
 
 Rpache is a lua-based methodology of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It utilized redis as its database.
@@ -6,7 +6,7 @@ Rpache is a lua-based methodology of having a dynamic configuration of nginx. It
 How it works
 ============
 
-rpache is composed of two components; the api and main. The api is a restful api embedded in lua and runs within the nginx process. It runs on a specific port and is manages the backends associated to references in the redis database.
+Red-x is composed of two components; the api and main. The api is a restful api embedded in lua and runs within the nginx process. It runs on a specific port and is manages the backends associated to references in the redis database.
 
 The other component is main, and this is what takes regular traffic, looks up the proper backend based on the subdomain and url, and proxies the request.
 
@@ -16,6 +16,7 @@ Setup Dev Environment
 Setup and start vagrant
 
 ```bash
+  vagrant plugin install vagrant-digitalocean
   vagrant plugin install vagrant-berkshelf --plugin-version '>= 2.0.1'
   vagrant plugin install vagrant-omnibus
   vagrant up
@@ -24,7 +25,7 @@ Setup and start vagrant
 Start nginx
 
 ```bash
-  vagrant ssh -c "sudo nginx -c $(pwd)/rpache/nginx.conf"
+  vagrant ssh -c "sudo nginx -c $(pwd)/red-x/nginx.conf"
 ```
 
 ## Example usage

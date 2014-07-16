@@ -17,6 +17,8 @@ if type(args['backend']) == 'table' then
         ngx.log(ngx.ERR, "Add " .. val)
         table.insert(backends, val)
     end
+elseif type(args['backend']) == 'nil' then
+    -- do nothing
 else
     ngx.log(ngx.ERR, "Add " .. args['backend'])
     table.insert(backends, args['backend'])
@@ -35,6 +37,9 @@ if reqType == "GET" then
         ngx.exit(404)
     end
 
+    if type(args['random']) == 'nil' then
+        args['random'] = 'false'
+    end
     if args['random']:lower() == 'true' or args['random'] == "1" then
         -- get random upstream in key (aka name)
         local res, err = red:srandmember(name)
@@ -43,6 +48,7 @@ if reqType == "GET" then
             ngx.exit(500)
         else
             ngx.say(res)
+            ngx.exit(200)
         end
     else
         -- get all upstreams in key (aka name)
@@ -54,6 +60,7 @@ if reqType == "GET" then
             for i, upstream in ipairs(res) do
                 ngx.say(upstream)
             end
+            ngx.exit(200)
         end
     end
 elseif reqType == "POST" then
@@ -69,6 +76,7 @@ elseif reqType == "POST" then
         ngx.exit(500)
     else
         ngx.say("OK")
+        ngx.exit(200)
     end
 elseif reqType == "PUT" then
     ngx.log(ngx.ERR, "PUT REQUEST")
@@ -82,9 +90,10 @@ elseif reqType == "PUT" then
     local results, err = red:commit_pipeline()
     if not results then
         ngx.say("failed to commit the pipelined requests: ", err)
-        return
+        ngx.exit(500)
     else
         ngx.say("OK")
+        ngx.exit(200)
     end
 elseif reqType == "DELETE" then
     ngx.log(ngx.ERR, "DELETE REQUEST")
@@ -105,9 +114,10 @@ elseif reqType == "DELETE" then
         ok, err = red:del(name)
         if not ok then
             ngx.say("failed to delete redis key: ", err)
-            return
+            ngx.exit(500)
         else
             ngx.say("OK")
+            ngx.exit(200)
         end
     else
         red:init_pipeline()
@@ -119,12 +129,14 @@ elseif reqType == "DELETE" then
         local results, err = red:commit_pipeline()
         if not results then
             ngx.say("failed to commit the pipelined requests: ", err)
-            return
+            ngx.exit(500)
         else
             ngx.say("OK")
+            ngx.exit(200)
         end
     end
 else
     ngx.log(ngx.ERR, "INVALID REQUEST")
     ngx.say("Invalid request")
+    ngx.exit(500)
 end

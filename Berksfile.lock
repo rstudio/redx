@@ -1,4 +1,5 @@
 DEPENDENCIES
+  apt
   git
   openresty
     git: git@github.com:priestjim/chef-openresty.git

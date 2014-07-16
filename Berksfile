@@ -1,6 +1,5 @@
 source "https://api.berkshelf.com"
 
-cookbook 'logrorate'
 cookbook 'apt'
 cookbook 'git'
 cookbook 'openresty', :git => 'git@github.com:priestjim/chef-openresty.git', protocol: :https

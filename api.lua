@@ -1,11 +1,6 @@
-local redis = require "resty.redis"
-local red = redis:new()
-red:set_timeout(1000)
-local ok, err = red:connect('127.0.0.1', 6379)
-if not ok then
-    ngx.say("Failed to connect to Redis: ", err)
-    ngx.exit(500)
-end
+local redis = require 'redis'
+
+local red = redis.connect()
 
 local name = ngx.var.uri:gsub('/','')
 local args = ngx.req.get_uri_args()

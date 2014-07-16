@@ -1,27 +1,8 @@
-local redis = require "resty.redis"
-local red = redis:new()
-red:set_timeout(1000)
-local ok, err = red:connect('127.0.0.1', 6379)
-if not ok then
-    ngx.say("Failed to connect to Redis: ", err)
-    ngx.exit(500)
-end
+local redis = require 'redis'
 
-function string:split(delimiter)
-  local result = { }
-  local from = 1
-  local delim_from, delim_to = string.find( self, delimiter, from )
+local red = redis.connect()
 
-  while delim_from do
-    table.insert( result, string.sub( self, from , delim_from-1 ) )
-    from = delim_to + 1
-    delim_from, delim_to = string.find( self, delimiter, from )
-  end
-
-  table.insert( result, string.sub( self, from ) )
-
-  return result
-end
+require 'split'
 
 -- get app name
 local app_name = ngx.var.uri:split('/')[2]

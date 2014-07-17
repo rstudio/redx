@@ -1,11 +1,4 @@
-local redis = require "resty.redis"
-local red = redis:new()
-red:set_timeout(1000)
-local ok, err = red:connect('127.0.0.1', 6379)
-if not ok then
-    ngx.say("Failed to connect to Redis: ", err)
-    ngx.exit(500)
-end
+local red = redis.connect()
 
 local name = ngx.var.uri:gsub('/','')
 local args = ngx.req.get_uri_args()
@@ -70,14 +63,7 @@ elseif reqType == "POST" then
         ngx.log(ngx.ERR, 'adding backend: ' .. backend)
         red:sadd(name, backend)
     end
-    local results, err = red:commit_pipeline()
-    if not results then
-        ngx.say("failed to commit the pipelined requests: ", err)
-        ngx.exit(500)
-    else
-        ngx.say("OK")
-        ngx.exit(200)
-    end
+    redis.commit(red, "failed to commit the pipelined requests:")
 elseif reqType == "PUT" then
     ngx.log(ngx.ERR, "PUT REQUEST")
     red:init_pipeline()
@@ -86,15 +72,7 @@ elseif reqType == "PUT" then
         ngx.log(ngx.ERR, 'adding backend: ' .. backend)
         red:sadd(name, backend)
     end
-    -- commit the change
-    local results, err = red:commit_pipeline()
-    if not results then
-        ngx.say("failed to commit the pipelined requests: ", err)
-        ngx.exit(500)
-    else
-        ngx.say("OK")
-        ngx.exit(200)
-    end
+    redis.commit(red, "failed to commit the pipelined requests:")
 elseif reqType == "DELETE" then
     ngx.log(ngx.ERR, "DELETE REQUEST")
 
@@ -125,15 +103,7 @@ elseif reqType == "DELETE" then
             ngx.log(ngx.ERR, 'deleting ' .. backend)
             red:srem(name, backend)
         end
-        -- commit the change
-        local results, err = red:commit_pipeline()
-        if not results then
-            ngx.say("failed to commit the pipelined requests: ", err)
-            ngx.exit(500)
-        else
-            ngx.say("OK")
-            ngx.exit(200)
-        end
+        redis.commit(red, "failed to commit the pipelined requests:")
     end
 else
     ngx.log(ngx.ERR, "INVALID REQUEST")

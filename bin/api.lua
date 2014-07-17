@@ -22,6 +22,7 @@ else
     table.insert(backends, args['backend'])
 end
 
+-- save a table of frontends/backends to redis
 save_data = function(red, body, overwrite)
     if body == nil then
         ngx.say('Must supply a json body')
@@ -34,10 +35,8 @@ save_data = function(red, body, overwrite)
                 if overwrite then
                     red:del('frontend:' .. frontend['name'])
                 end
-                for key2,backend in pairs(frontend['backends']) do
-                    ngx.log(ngx.ERR, 'adding frontend: ' .. frontend["name"] .. ' ' .. backend)
-                    red:sadd('frontend:' .. frontend['name'], backend)
-                end
+                ngx.log(ngx.ERR, 'adding frontend: ' .. frontend["name"] .. ' ' .. frontend['backend'])
+                red:set('frontend:' .. frontend['name'], frontend['backend'])
             end
         end
         if body["backends"] then
@@ -51,7 +50,37 @@ save_data = function(red, body, overwrite)
                 end
             end
         end
-        redis.commit(red, "failed to commit the pipelined requests:")
+        redis.commit(red, "failed to save data:")
+    end
+end
+
+-- delete a table of frontends/backends to redis
+delete_data = function(red, body)
+    if body == nil then
+        ngx.say('Must supply a json body')
+        ngx.exit(400)
+    else
+        body = cjson.decode(body)
+        red:init_pipeline()
+        if body["frontends"] then
+            for key1,frontend in pairs(body['frontends']) do
+                red:del('frontend:' .. frontend['name'])
+            end
+        end
+        if body["backends"] then
+            for key1,backend in pairs(body['backends']) do
+                if table.getn(backend["hosts"]) == 0 then
+                    ngx.log(ngx.ERR, 'removing backend: ' .. backend["name"])
+                    red:del('backend:' .. backend["name"])
+                else
+                    for key2,host in pairs(backend["hosts"]) do
+                        ngx.log(ngx.ERR, 'removing backend: ' .. backend["name"] .. ' ' .. host)
+                        red:srem('backend:' .. backend["name"], host)
+                    end
+                end
+            end
+        end
+        redis.commit(red, "failed to delete data:")
     end
 end
 
@@ -102,36 +131,7 @@ elseif reqType == "PUT" then
     save_data(red, body, true)
 elseif reqType == "DELETE" then
     ngx.log(ngx.ERR, "DELETE REQUEST")
-
-    -- Test if key exists
-    local res, err = red:exists(name)
-    if not res then
-        ngx.say("failed to get key: ", err)
-        ngx.exit(500)
-    elseif res == "0" then
-        ngx.say("OK")
-        ngx.exit(200)
-        return
-    end
-
-    if next (backends) == nil then
-        ngx.log(ngx.ERR, 'deleting ' .. name)
-        ok, err = red:del(name)
-        if not ok then
-            ngx.say("failed to delete redis key: ", err)
-            ngx.exit(500)
-        else
-            ngx.say("OK")
-            ngx.exit(200)
-        end
-    else
-        red:init_pipeline()
-        for i, backend in pairs(backends) do
-            ngx.log(ngx.ERR, 'deleting ' .. backend)
-            red:srem(name, backend)
-        end
-        redis.commit(red, "failed to commit the pipelined requests:")
-    end
+    delete_data(red, body)
 else
     ngx.log(ngx.ERR, "INVALID REQUEST")
     ngx.say("Invalid request")

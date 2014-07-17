@@ -16,16 +16,9 @@ Setup Dev Environment
 Setup and start vagrant
 
 ```bash
-  vagrant plugin install vagrant-digitalocean
   vagrant plugin install vagrant-berkshelf --plugin-version '>= 2.0.1'
   vagrant plugin install vagrant-omnibus
   vagrant up
-```
-
-Start nginx
-
-```bash
-  vagrant ssh -c "sudo nginx -c $(pwd)/redx/nginx.conf"
 ```
 
 ## Example usage

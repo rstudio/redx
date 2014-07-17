@@ -1,6 +1,9 @@
 DEPENDENCIES
   apt
   git
+  lua-cjson
+    git: git@github.com:CBarraford/lua-cjson-cookbook.git
+    revision: 5453a101a0c989173f1b6330576b403072a34357
   openresty
     git: git@github.com:priestjim/chef-openresty.git
     revision: 0c6629ddd670989b54455c71cdb81d696f475de1
@@ -24,6 +27,9 @@ GRAPH
     yum-epel (>= 0.0.0)
   jemalloc (0.1.1)
   logrotate (1.6.0)
+  lua-cjson (0.1.0)
+    apt (>= 0.0.0)
+    git (>= 0.0.0)
   ohai (2.0.1)
   openresty (0.3.3)
     apt (>= 0.0.0)

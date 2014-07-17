@@ -6,8 +6,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.hostname = 'redx'
 
-  config.vm.network :forwarded_port, guest: 8080, host: 8080
-  config.vm.network :forwarded_port, guest: 8081, host: 8081
+  config.vm.network :forwarded_port, guest: 6379, host: 6379
 
   # install the latest version of chef
   config.omnibus.chef_version = :latest
@@ -29,6 +28,7 @@ Vagrant.configure("2") do |config|
 
     chef.add_recipe "git"
     chef.add_recipe "openresty"
+    chef.add_recipe "openresty::luarocks"
     chef.add_recipe "redis::server"
   end
 

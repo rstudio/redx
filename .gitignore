@@ -1,2 +1,7 @@
 .vagrant/
 *.swp
+*.lua
+
+logs/
+
+*.compiled

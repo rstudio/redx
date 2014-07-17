@@ -1,5 +1,3 @@
-local config = require 'config'
-
 local M = {}
 
 M.connect = function()

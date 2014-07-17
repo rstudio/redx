@@ -1,8 +1,5 @@
-local redis = require 'redis'
 
 local red = redis.connect()
-
-require 'split'
 
 -- get app name
 local app_name = ngx.var.uri:split('/')[2]

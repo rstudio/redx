@@ -1,5 +1,3 @@
-local redis = require 'redis'
-
 local red = redis.connect()
 
 local name = ngx.var.uri:gsub('/','')

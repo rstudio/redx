@@ -2,6 +2,11 @@ local red = redis.connect()
 
 local name = ngx.var.uri:gsub('/','')
 local args = ngx.req.get_uri_args()
+ngx.req.read_body()
+local body = ngx.req.get_body_data()
+if type(body) ~= 'nil' then
+    local body = cjson.decode(body)
+end
 
 -- get backends (enforce backends is always a table)
 local backends = {}
@@ -15,6 +20,39 @@ elseif type(args['backend']) == 'nil' then
 else
     ngx.log(ngx.ERR, "Add " .. args['backend'])
     table.insert(backends, args['backend'])
+end
+
+save_data = function(red, body, overwrite)
+    if body == nil then
+        ngx.say('Must supply a json body')
+        ngx.exit(400)
+    else
+        body = cjson.decode(body)
+        red:init_pipeline()
+        if body["frontends"] then
+            for key1,frontend in pairs(body['frontends']) do
+                if overwrite then
+                    red:del('frontend:' .. frontend['name'])
+                end
+                for key2,backend in pairs(frontend['backends']) do
+                    ngx.log(ngx.ERR, 'adding frontend: ' .. frontend["name"] .. ' ' .. backend)
+                    red:sadd('frontend:' .. frontend['name'], backend)
+                end
+            end
+        end
+        if body["backends"] then
+            for key1,backend in pairs(body['backends']) do
+                if overwrite then
+                    red:del('backend:' .. backend["name"])
+                end
+                for key2,host in pairs(backend["hosts"]) do
+                    ngx.log(ngx.ERR, 'adding backend: ' .. backend["name"] .. ' ' .. host)
+                    red:sadd('backend:' .. backend["name"], host)
+                end
+            end
+        end
+        redis.commit(red, "failed to commit the pipelined requests:")
+    end
 end
 
 local reqType = ngx.req.get_method()
@@ -58,36 +96,10 @@ if reqType == "GET" then
     end
 elseif reqType == "POST" then
     ngx.log(ngx.ERR, "POST REQUEST")
-    red:init_pipeline()
-    for i,backend in pairs(backends) do
-        ngx.log(ngx.ERR, 'adding backend: ' .. backend)
-        red:sadd(name, backend)
-    end
-    local results, err = red:commit_pipeline()
-    if not results then
-        ngx.say("failed to commit the pipelined requests: ", err)
-        ngx.exit(500)
-    else
-        ngx.say("OK")
-        ngx.exit(200)
-    end
+    save_data(red, body, false)
 elseif reqType == "PUT" then
     ngx.log(ngx.ERR, "PUT REQUEST")
-    red:init_pipeline()
-    red:del(name)
-    for i, backend in pairs(backends) do
-        ngx.log(ngx.ERR, 'adding backend: ' .. backend)
-        red:sadd(name, backend)
-    end
-    -- commit the change
-    local results, err = red:commit_pipeline()
-    if not results then
-        ngx.say("failed to commit the pipelined requests: ", err)
-        ngx.exit(500)
-    else
-        ngx.say("OK")
-        ngx.exit(200)
-    end
+    save_data(red, body, true)
 elseif reqType == "DELETE" then
     ngx.log(ngx.ERR, "DELETE REQUEST")
 
@@ -118,15 +130,7 @@ elseif reqType == "DELETE" then
             ngx.log(ngx.ERR, 'deleting ' .. backend)
             red:srem(name, backend)
         end
-        -- commit the change
-        local results, err = red:commit_pipeline()
-        if not results then
-            ngx.say("failed to commit the pipelined requests: ", err)
-            ngx.exit(500)
-        else
-            ngx.say("OK")
-            ngx.exit(200)
-        end
+        redis.commit(red, "failed to commit the pipelined requests:")
     end
 else
     ngx.log(ngx.ERR, "INVALID REQUEST")

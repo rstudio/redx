@@ -13,4 +13,16 @@ M.connect = function()
     end
 end
 
+M.commit = function(red, error_msg)
+    -- commit the change
+    local results, err = red:commit_pipeline()
+    if not results then
+        ngx.say(error_msg, err)
+        ngx.exit(500)
+    else
+        ngx.say("OK")
+        ngx.exit(200)
+    end
+end
+
 return M

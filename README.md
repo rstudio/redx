@@ -1,7 +1,7 @@
 redx
 ======
 
-Rpache is a lua-based methodology of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It utilized redis as its database.
+Redx is a lua-based methodology of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It utilized redis as its database.
 
 How it works
 ============

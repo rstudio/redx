@@ -1,5 +1,7 @@
 M = {}
 
+export inspect = require('inspect')
+
 M.connect = (@) ->
     -- connect to redis
     redis = require "resty.redis"
@@ -24,5 +26,112 @@ M.commit = (@, red, error_msg) ->
     else
         @msg = "OK"
         @status = 404
+
+M.get_data = (@, asset_type, asset_name) ->
+    red = redis.connect(@)
+    switch asset_type
+        when 'frontends'
+            @resp, @msg = red\get('frontend:' .. asset_name)
+            @status = 500 unless @resp
+        when 'backends'
+            @resp, @msg = red\smembers('backend:' .. asset_name)
+        else
+            @status = 400
+            @msg = 'Bad asset type. Must be "frontends" or "backends"'
+    if @resp
+        @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500 unless @status
+        @msg = 'Unknown failutre' unless @msg
+    red\close()
+
+M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
+    red = redis.connect(@)
+    switch asset_type
+        when 'frontends'
+            ok, err = red\set('frontend:' .. asset_name, asset_value)
+        when 'backends'
+            red = redis.connect(@)
+            red\init_pipeline() if overwrite
+            red\del('backend:' .. asset_name) if overwrite
+            ok, err = red\sadd('backend:' .. asset_name, asset_value)
+            redis.commit(@, red, "Failed to save backend: ") if overwrite
+        else
+            ok = false
+            @status = 400
+            @msg = 'Bad asset type. Must be "frontends" or "backends"'
+    if ok == nil
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500
+        err = "unknown" if err == nil
+        @msg = "Failed to save backend: " .. err
+    red\close()
+
+M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
+    red = redis.connect(@)
+    switch asset_type
+        when 'frontends'
+            resp, @msg = red\del('frontend:' .. asset_name)
+            @status = 500 unless @resp
+        when 'backends'
+            if asset_value == nil
+                resp, @msg = red\del('backend:' .. asset_name)
+            else
+                resp, @msg = red\srem('backend:' .. asset_name, asset_value)
+        else
+            @status = 400
+            @msg = 'Bad asset type. Must be "frontends" or "backends"'
+    if resp == nil
+        @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
+        @status = 200
+        @msg = "OK" unless @msg
+    else
+        @status = 500 unless @status
+        @msg = 'Unknown failutre' unless @msg
+    red\close()
+
+M.save_batch_data = (@, data, overwrite=false) ->
+    red = redis.connect(@)
+    red\init_pipeline()
+    if data['frontends']
+        for frontend in *data['frontends'] do
+            print(inspect(frontend))
+            red\del('frontend:' .. frontend['url']) if overwrite
+            unless frontend['backend_name'] == nil
+                print('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
+                red\set('frontend:' .. frontend['url'], frontend['backend_name'])
+    if data["backends"]
+        for backend in *data['backends'] do
+            red\del('backend:' .. backend["name"]) if overwrite
+            -- ensure upstreams are a table
+            backend['upstreams'] = {backend['upstreams']} unless type(backend['upstreams']) == 'table'
+            for upstream in *backend['upstreams']
+                unless upstream == nil
+                    print('adding backend: ' .. backend["name"] .. ' ' .. upstream)
+                    red\sadd('backend:' .. backend["name"], upstream)
+    redis.commit(@, red, "failed to save data: ")
+
+M.delete_batch_data = (@, data) ->
+    red = redis.connect(@)
+    red\init_pipeline()
+    if data['frontends']
+        for frontend in *data['frontends'] do
+            print('deleting frontend: ' .. frontend['url'])
+            red\del('frontend:' .. frontend['url'])
+    if data["backends"]
+        for backend in *data['backends'] do
+            red\del('backend:' .. backend["name"]) if backend['upstreams'] == nil
+            if backend['upstreams']
+                -- ensure upstreams are a table
+                backend['upstreams'] = {backend['upstreams']} unless type(backend['upstreams']) == 'table'
+                for upstream in *backend['upstreams']
+                    unless upstream == nil
+                        print('deleting backend: ' .. backend["name"] .. ' ' .. upstream)
+                        red\srem('backend:' .. backend["name"], upstream)
+    redis.commit(@, red, "failed to save data: ")
 
 return M

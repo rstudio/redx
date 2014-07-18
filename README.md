@@ -21,4 +21,4 @@ Setup and start vagrant
   vagrant up
 ```
 
-To see redx logs, see `/var/log/nginx/\*`
+To see redx logs, see `/var/log/nginx/[access,error].log`

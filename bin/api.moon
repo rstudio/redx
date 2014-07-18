@@ -12,6 +12,12 @@ json_response = (@) ->
     return json
 
 webserver = class extends lapis.Application
+    '/flush': respond_to {
+        DELETE: =>
+            redis.flush(@)
+            status: @status, json: json_response(@)
+    }
+
     '/batch': respond_to {
         before: =>
             for k,v in pairs @req.params_post do

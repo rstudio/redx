@@ -32,6 +32,18 @@ M.commit = (@, red, error_msg) ->
         @msg = "OK"
         @status = 404
 
+M.flush = (@) ->
+    red = redis.connect(@)
+    ok, err = red\flushall()
+    print(ok)
+    print(err)
+    if ok
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500
+        @msg = err
+ 
 M.get_data = (@, asset_type, asset_name) ->
     red = redis.connect(@)
     switch asset_type

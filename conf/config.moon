@@ -1,10 +1,12 @@
-local M = {}
+M = {}
 
+-- redis host
 M.redis_host = '127.0.0.1'
+-- redis port
 M.redis_port = '6379'
 
 -- the max number of path parts to look up
--- examples 
+-- examples
 -- 1 = host.com/contact
 -- 2 = host.com/contact/us
 -- 3 = host.com/contact/us/now

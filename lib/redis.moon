@@ -1,7 +1,11 @@
 M = {}
 
 export inspect = require('inspect')
-require 'split'
+import escape_pattern from require "lapis.util"
+
+split = (str, delim using nil) ->
+  str ..= delim
+  [part for part in str\gmatch "(.-)" .. escape_pattern delim]
 
 M.connect = (@) ->
     -- connect to redis
@@ -134,7 +138,7 @@ M.delete_batch_data = (@, data) ->
 
 M.fetch_frontend = (@, max_path_length=3) ->
     path = @req.parsed_url['path']
-    path_parts = path\split('/')
+    path_parts = split path, '/'
     keys = {}
     p = ''
     count = 0

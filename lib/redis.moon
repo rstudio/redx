@@ -1,6 +1,7 @@
 M = {}
 
 export inspect = require('inspect')
+require 'split'
 
 M.connect = (@) ->
     -- connect to redis
@@ -45,7 +46,6 @@ M.get_data = (@, asset_type, asset_name) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
-    red\close()
 
 M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
     red = redis.connect(@)
@@ -69,7 +69,6 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
         @status = 500
         err = "unknown" if err == nil
         @msg = "Failed to save backend: " .. err
-    red\close()
 
 M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
     red = redis.connect(@)
@@ -92,7 +91,6 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
-    red\close()
 
 M.save_batch_data = (@, data, overwrite=false) ->
     red = redis.connect(@)
@@ -133,5 +131,33 @@ M.delete_batch_data = (@, data) ->
                         print('deleting backend: ' .. backend["name"] .. ' ' .. upstream)
                         red\srem('backend:' .. backend["name"], upstream)
     redis.commit(@, red, "failed to save data: ")
+
+M.fetch_frontend = (@, max_path_length=3) ->
+    path = @req.parsed_url['path']
+    path_parts = path\split('/')
+    keys = {}
+    p = ''
+    count = 0
+    for k,v in pairs path_parts do
+        unless v == nil or v == ''
+            if count < (max_path_length)
+                count += 1
+                p = p .. "/#{v}"
+                table.insert(keys, 1, @req.parsed_url['host'] .. p)
+    red = redis.connect(@)
+    for key in *keys do
+        resp, err = red\get('frontend:' .. key)
+        if type(resp) == 'string'
+            return { frontend_key: key, backend_key: resp }
+    return nil
+
+M.fetch_upstream = (@, backend_key) ->
+    red = redis.connect(@)
+    resp, err = red\srandmember('backend:' .. backend_key)
+    print('Failed getting backend: ' .. err) unless err == nil
+    if type(resp) == 'string'
+        return resp
+    else
+        return nil
 
 return M

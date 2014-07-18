@@ -1,40 +1,75 @@
-local red = redis.connect()
-
--- get app name
-local app_name = ngx.var.uri:split('/')[2]
-ngx.log(ngx.ERR, app_name)
-if type(app_name) == 'nil' or app_name == '' then
-    ngx.say("Invalid application name")
-    ngx.exit(404)
+redis = require('redis')
+local lapis = require("lapis")
+local respond_to
+do
+  local _obj_0 = require("lapis.application")
+  respond_to = _obj_0.respond_to
 end
-
--- get account name
-local account_name = ngx.var.host:split('%.')[1]
-ngx.log(ngx.ERR, account_name)
-if type(app_name) == 'nil' or app_name == '' then
-    ngx.say("Invalid account name")
-    ngx.exit(404)
-end
-
--- get random upstream in key (aka name)
-local res, err = red:srandmember(account_name .. ":" .. app_name)
-if res then
-    if type(res) == 'string' then
-        backend = res:split(',')
-        backend_name = backend[1]
-        backend_host = backend[2]
-        backend_port = backend[3]
-        ngx.req.set_header("X-Proxy-Cache-Hit", "true")
-        ngx.req.set_header("X-Lucid-Account-Name", account_name)
-        ngx.req.set_header("X-Lucid-App-Name", app_name)
-        ngx.req.set_header("X-Proxy-Backend-Name", backend_name)
-        ngx.req.set_header("X-Proxy-Backend-Host", backend_host)
-        ngx.req.set_header("X-Proxy-Backend-Port", backend_port)
-        ngx.var.upstream = backend_host .. ":" .. backend_port
-        ngx.log(ngx.ERR, backend_host .. ":" .. backend_port)
+local process_request
+process_request = function(self)
+  local frontend = redis.fetch_frontend(self, 3)
+  if frontend == nil then
+    return ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "false")
+  else
+    ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
+    ngx.req.set_header("X-Redx-Frontend-Name", frontend['frontend_key'])
+    ngx.req.set_header("X-Redx-Backend-Name", frontend['backend_key'])
+    local upstream = redis.fetch_upstream(self, frontend['backend_key'], false)
+    if upstream == nil then
+      return ngx.req.set_header("X-Redx-Backend-Cache-Hit", "false")
     else
-        ngx.req.set_header("X-Proxy-Cache-Hit", "false")
-        ngx.req.set_header("X-Lucid-Account-Name", account_name)
-        ngx.req.set_header("X-Lucid-App-Name", app_name)
+      ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
+      ngx.req.set_header("X-Redx-Upstream", upstream)
+      print("UPSTREAM: " .. upstream)
+      ngx.var.upstream = upstream
     end
+  end
 end
+local webserver
+do
+  local _parent_0 = lapis.Application
+  local _base_0 = {
+    ['/'] = function(self)
+      process_request(self)
+      return {
+        layout = false
+      }
+    end,
+    default_route = function(self)
+      process_request(self)
+      return {
+        layout = false
+      }
+    end
+  }
+  _base_0.__index = _base_0
+  setmetatable(_base_0, _parent_0.__base)
+  local _class_0 = setmetatable({
+    __init = function(self, ...)
+      return _parent_0.__init(self, ...)
+    end,
+    __base = _base_0,
+    __name = "webserver",
+    __parent = _parent_0
+  }, {
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
+    __call = function(cls, ...)
+      local _self_0 = setmetatable({}, _base_0)
+      cls.__init(_self_0, ...)
+      return _self_0
+    end
+  })
+  _base_0.__class = _class_0
+  if _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
+  webserver = _class_0
+end
+return lapis.serve(webserver)

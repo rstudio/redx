@@ -1,15 +1,15 @@
 DEPENDENCIES
   apt
-  git
-  openresty
-    git: git@github.com:priestjim/chef-openresty.git
-    revision: 0c6629ddd670989b54455c71cdb81d696f475de1
   redis
     git: git@github.com:miah/chef-redis.git
     revision: 5b7e8585b23dcef0de3ec6cfbb31ad75fc912d8e
+  redx
+    path: ../redx-cookbook
 
 GRAPH
   apt (2.4.0)
+  bluepill (2.3.1)
+    rsyslog (>= 0.0.0)
   build-essential (2.0.4)
   chef-sugar (2.0.0)
   chef_handler (1.1.6)
@@ -24,8 +24,15 @@ GRAPH
     yum-epel (>= 0.0.0)
   jemalloc (0.1.1)
   logrotate (1.6.0)
+  nginx (2.7.4)
+    apt (~> 2.2)
+    bluepill (~> 2.3)
+    build-essential (~> 2.0)
+    ohai (~> 2.0)
+    runit (~> 1.2)
+    yum-epel (~> 0.3)
   ohai (2.0.1)
-  openresty (0.3.3)
+  openresty (0.3.2)
     apt (>= 0.0.0)
     build-essential (>= 0.0.0)
     git (>= 0.0.0)
@@ -46,12 +53,19 @@ GRAPH
     runit (>= 0.0.0)
     stunnel (>= 2.0.0)
     yum (>= 0.0.0)
+  redx (0.1.0)
+    apt (>= 0.0.0)
+    git (>= 0.0.0)
+    nginx (>= 0.0.0)
+    openresty (>= 0.0.0)
+    redx (>= 0.0.0)
+  rsyslog (1.12.2)
   runit (1.5.10)
     build-essential (>= 0.0.0)
     yum (~> 3.0)
     yum-epel (>= 0.0.0)
   stunnel (2.1.0)
-  windows (1.31.0)
+  windows (1.32.3)
     chef_handler (>= 0.0.0)
   yum (3.2.2)
   yum-epel (0.3.6)

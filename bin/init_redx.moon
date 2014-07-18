@@ -1,5 +1,3 @@
--- init_redx.lua
-
 export redis = require 'redis'
 export config = require 'config'
 

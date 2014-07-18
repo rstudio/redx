@@ -19,5 +19,6 @@ Setup and start vagrant
   vagrant plugin install vagrant-berkshelf --plugin-version '>= 2.0.1'
   vagrant plugin install vagrant-omnibus
   vagrant up
-  vagrant ssh -c 'lapis server'
 ```
+
+To see redx logs, see `/var/log/nginx/\*`

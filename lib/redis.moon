@@ -121,9 +121,9 @@ M.save_batch_data = (@, data, overwrite=false) ->
     if data["backends"]
         for backend in *data['backends'] do
             red\del('backend:' .. backend["name"]) if overwrite
-            -- ensure upstreams are a table
-            backend['upstreams'] = {backend['upstreams']} unless type(backend['upstreams']) == 'table'
-            for upstream in *backend['upstreams']
+            -- ensure servers are a table
+            backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
+            for upstream in *backend['servers']
                 unless upstream == nil
                     print('adding backend: ' .. backend["name"] .. ' ' .. upstream)
                     red\sadd('backend:' .. backend["name"], upstream)
@@ -138,11 +138,11 @@ M.delete_batch_data = (@, data) ->
             red\del('frontend:' .. frontend['url'])
     if data["backends"]
         for backend in *data['backends'] do
-            red\del('backend:' .. backend["name"]) if backend['upstreams'] == nil
-            if backend['upstreams']
-                -- ensure upstreams are a table
-                backend['upstreams'] = {backend['upstreams']} unless type(backend['upstreams']) == 'table'
-                for upstream in *backend['upstreams']
+            red\del('backend:' .. backend["name"]) if backend['servers'] == nil
+            if backend['servers']
+                -- ensure servers are a table
+                backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
+                for upstream in *backend['servers']
                     unless upstream == nil
                         print('deleting backend: ' .. backend["name"] .. ' ' .. upstream)
                         red\srem('backend:' .. backend["name"], upstream)

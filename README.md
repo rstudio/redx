@@ -1,7 +1,7 @@
 redx (experimental)
 ======
 
-Redx is a lua-based approach of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs inside nginx itself) to manage the many-to-one relationships between frontends that points to a backend. Frontends are host and paths, while backends is a list of upstream servers.
+Redx is a lua-based approach of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs inside nginx itself) to manage the many-to-one relationships between frontends that points to a backend. Frontends are host and paths, while backends is a list of servers.
 
 How it works
 ============
@@ -51,14 +51,14 @@ The json body must follow this json structure exactly
     "backends": [
         {
             "name": "12345",
-            "upstreams": [
+            "servers": [
                 "google.com:80",
                 "duckduckgo.com:80"
             ]
         },
         {
             "name": "menlobackend",
-            "upstreams": [
+            "servers": [
                 "menloparkmuseum.org",
                 "tesc.edu"
             ]
@@ -71,7 +71,7 @@ The json body must follow this json structure exactly
 
 ##### `POST/PUT` example
 ```
-curl -X POST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "upstreams": ["google.com:80", "duckduckgo.com:80"]}]}'
+curl -X POST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "servers": ["google.com:80", "duckduckgo.com:80"]}]}'
 ```
 ##### `DELETE` example
 ```
@@ -86,7 +86,7 @@ curl -X DELETE localhost:8081/batch -d '{
     "backends": [
         {
             "name": "12345",
-            "upstreams": [
+            "servers": [
                 "google.com:80",
                 "duckduckgo.com:80"
             ]
@@ -99,7 +99,7 @@ curl -X DELETE localhost:8081/batch -d '{
     "backends": [
         {
             "name": "12345",
-            "upstreams": [
+            "servers": [
                 "google.com:80"
             ]
         }

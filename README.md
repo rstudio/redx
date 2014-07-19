@@ -27,10 +27,10 @@ To see redx logs, see `/var/log/nginx/[access,error].log`
 API
 ===
 
-## POST vs PUT
-`POST` and `PUT` do very similar things, with a slight but important different. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given.
+#### POST vs PUT
+`POST` and `PUT` do very similar things, with a slight but important difference. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given in a single db commit.
 
-### Batch
+### POST/PUT/DELETE /batch
 
 Batch allows you to make multiple edits in a single redis commit. It support `POST`, `PUT`, and `DELETE`. You **MUST** have a json body with your http request.
 
@@ -67,14 +67,17 @@ The json body must follow this json structure exactly
 }
 ```
 
-#### Endpoint
-
-``` 
-GET/POST/PUT /batch
-```
-
 #### Examples
 
+##### `POST/PUT` example
 ```
-curl -v -XPOST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "upstreams": ["google.com:80", "duckduckgo.com:80"]}]}'
+curl -X POST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "upstreams": ["google.com:80", "duckduckgo.com:80"]}]}'
+```
+##### `DELETE` example
+```
+# will delete the frontend and backend
+curl -X DELETE localhost:8081/batch -d '{"frontends":[{"url": "localhost/test"}], "backends":[{"name": "12345"}]}'
+
+# will delete only one of the servers in the upstream
+curl -X DELETE localhost:8081/batch -d '{"backends":[{"name": "12345", "upstreams": ["google.com:80"]}]}'
 ```

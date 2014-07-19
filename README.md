@@ -95,17 +95,12 @@ curl -X POST localhost:8081/batch -d '{
 curl -X DELETE localhost:8081/batch -d '{
     "frontends": [
         {
-            "url": "localhost/test",
-            "backend_name": "12345"
+            "url": "localhost/test"
         }
     ],
     "backends": [
         {
-            "name": "12345",
-            "servers": [
-                "google.com:80",
-                "duckduckgo.com:80"
-            ]
+            "name": "12345"
         }
     ]
 }'

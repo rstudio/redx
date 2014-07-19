@@ -30,6 +30,27 @@ API
 #### POST vs PUT
 `POST` and `PUT` do very similar things, with a slight but important difference. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given in a single db commit.
 
+### (GET|POST|PUT|DELETE) /frontends/<url>/<backend_name>
+
+The frontends endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/frontends/myhost.com%2Ftest
+```
+
+##### `POST/PUT` example
+```
+curl -X POST localhost:8081/frontends/myhost.com%2Ftest/mybackend
+```
+
+##### `DELETE` example
+```
+curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest
+```
+
 ### (DELETE) /flush
 
 Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.

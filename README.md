@@ -27,12 +27,9 @@ To see redx logs, see `/var/log/nginx/[access,error].log`
 API
 ===
 
-#### POST vs PUT
-`POST` and `PUT` do very similar things, with a slight but important difference. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given in a single db commit.
-
 ### (GET|POST|PUT|DELETE) /frontends/<url>/<backend_name>
 
-The frontends endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
+The `frontends` endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
 
 #### Examples
 
@@ -63,9 +60,44 @@ Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](
 curl -X DELETE localhost:8081/flush
 ```
 
+### (GET|POST|PUT|DELETE) /backends/<name>/<server>
+
+The `backends` endpoint allows you to get, update, replace, or delete a backend. Using the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit. Be sure to character escape as needed.
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/backends/mybackend
+```
+
+##### `POST/PUT` example
+```
+curl -X POST localhost:8081/backends/mybackend/google.com%3A80
+```
+
+##### `DELETE` example
+```
+# will delete the entire backend
+curl -X DELETE localhost:8081/backends/mybackend
+# will delete one server in the backend
+curl -X DELETE localhost:8081/backends/mybackend/google.com%3A80
+```
+
+### (DELETE) /flush
+
+Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.
+
+#### Examples
+
+##### `DELETE` example
+
+```
+curl -X DELETE localhost:8081/flush
+```
 ### (POST|PUT|DELETE) /batch
 
-Batch allows you to make multiple edits in a single http request and redis commit. You **MUST** have a json body with your http request.
+Batch allows you to make multiple edits in a single http request and redis commit. You **MUST** have a json body with your http request. Similar to the `backends` endpoint, the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit.
 
 The json body must follow this json structure exactly
 

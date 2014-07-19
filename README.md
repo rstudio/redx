@@ -21,7 +21,7 @@ Setup and start vagrant
   vagrant up
 ```
 
-The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx'). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
+The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
 To see redx logs, see `/var/log/nginx/[access,error].log`
 
 API
@@ -76,8 +76,33 @@ curl -X POST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "b
 ##### `DELETE` example
 ```
 # will delete the frontend and backend
-curl -X DELETE localhost:8081/batch -d '{"frontends":[{"url": "localhost/test"}], "backends":[{"name": "12345"}]}'
+curl -X DELETE localhost:8081/batch -d '{
+    "frontends": [
+        {
+            "url": "localhost/test",
+            "backend_name": "12345"
+        }
+    ],
+    "backends": [
+        {
+            "name": "12345",
+            "upstreams": [
+                "google.com:80",
+                "duckduckgo.com:80"
+            ]
+        }
+    ]
+}'
 
 # will delete only one of the servers in the upstream
-curl -X DELETE localhost:8081/batch -d '{"backends":[{"name": "12345", "upstreams": ["google.com:80"]}]}'
+curl -X DELETE localhost:8081/batch -d '{
+    "backends": [
+        {
+            "name": "12345",
+            "upstreams": [
+                "google.com:80"
+            ]
+        }
+    ]
+}'
 ```

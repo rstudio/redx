@@ -34,7 +34,7 @@ M.commit = (@, red, error_msg) ->
 
 M.flush = (@) ->
     red = redis.connect(@)
-    ok, err = red\flushall()
+    ok, err = red\flushdb()
     print(ok)
     print(err)
     if ok

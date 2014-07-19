@@ -30,9 +30,21 @@ API
 #### POST vs PUT
 `POST` and `PUT` do very similar things, with a slight but important difference. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given in a single db commit.
 
-### POST/PUT/DELETE /batch
+### (DELETE) /flush
 
-Batch allows you to make multiple edits in a single redis commit. It support `POST`, `PUT`, and `DELETE`. You **MUST** have a json body with your http request.
+Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.
+
+#### Examples
+
+##### `DELETE` example
+
+```
+curl -X DELETE localhost:8081/flush
+```
+
+### (POST|PUT|DELETE) /batch
+
+Batch allows you to make multiple edits in a single http request and redis commit. You **MUST** have a json body with your http request.
 
 The json body must follow this json structure exactly
 

@@ -1,6 +1,8 @@
+print("foooooo")
 export redis = require 'redis'
 export inspect = require('inspect')
 
+print("foooooo")
 lapis = require "lapis"
 import respond_to from require "lapis.application"
 import from_json from require "lapis.util"

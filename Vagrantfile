@@ -21,7 +21,7 @@ Vagrant.configure("2") do |config|
 
     chef.json = {
       "redx" => {
-        "dir" => "/home/vagrant/redx",
+       # "dir" => "/home/vagrant/redx",
         "nginx" => {
           "api_ports" => [8081],
           "main_ports" => [8080]
@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
 
     chef.add_recipe "apt"
     chef.add_recipe "redis::server"
-    chef.add_recipe "redx"
+    chef.add_recipe "redx::install"
   end
 
   config.vm.provision :shell, :path => 'post-install.sh'

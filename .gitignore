@@ -1,7 +1,5 @@
 .vagrant/
 *.swp
 *.lua
-
 logs/
-
-*.compiled
+nginx.conf.compiled

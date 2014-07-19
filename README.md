@@ -21,4 +21,60 @@ Setup and start vagrant
   vagrant up
 ```
 
+The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx'). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
 To see redx logs, see `/var/log/nginx/[access,error].log`
+
+API
+===
+
+## POST vs PUT
+`POST` and `PUT` do very similar things, with a slight but important different. `POST` will create or update the redis db with your data, while `PUT` will create or replace. Due to frontends being stored as simple key-values, `POST` and `PUT` are treated the same. Backends, however, are stored as redis sets, which means `POST` will be treated as `append-only` while `PUT` will delete the set and add whatever you have given.
+
+### Batch
+
+Batch allows you to make multiple edits in a single redis commit. It support `POST`, `PUT`, and `DELETE`. You **MUST** have a json body with your http request.
+
+The json body must follow this json structure exactly
+
+```
+{
+    "frontends": [
+        {
+            "url": "localhost/search",
+            "backend_name": "12345"
+        },
+        {
+            "url": "test.com/menlo/park",
+            "backend_name": "menlobackend"
+        }
+    ],
+    "backends": [
+        {
+            "name": "12345",
+            "upstreams": [
+                "google.com:80",
+                "duckduckgo.com:80"
+            ]
+        },
+        {
+            "name": "menlobackend",
+            "upstreams": [
+                "menloparkmuseum.org",
+                "tesc.edu"
+            ]
+        }
+    ]
+}
+```
+
+#### Endpoint
+
+``` 
+GET/POST/PUT /batch
+```
+
+#### Examples
+
+```
+curl -v -XPOST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "upstreams": ["google.com:80", "duckduckgo.com:80"]}]}'
+```

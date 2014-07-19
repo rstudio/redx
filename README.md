@@ -71,7 +71,23 @@ The json body must follow this json structure exactly
 
 ##### `POST/PUT` example
 ```
-curl -X POST localhost:8081/batch -d '{"frontends":[{"url": "localhost/test", "backend_name": "12345"}], "backends":[{"name": "12345", "servers": ["google.com:80", "duckduckgo.com:80"]}]}'
+curl -X POST localhost:8081/batch -d '{
+    "frontends": [
+        {
+            "url": "localhost/test",
+            "backend_name": "12345"
+        }
+    ],
+    "backends": [
+        {
+            "name": "12345",
+            "servers": [
+                "google.com:80",
+                "duckduckgo.com:80"
+            ]
+        }
+    ]
+}'
 ```
 ##### `DELETE` example
 ```
@@ -94,7 +110,7 @@ curl -X DELETE localhost:8081/batch -d '{
     ]
 }'
 
-# will delete only one of the servers in the upstream
+# will delete only one of the servers in the backend
 curl -X DELETE localhost:8081/batch -d '{
     "backends": [
         {

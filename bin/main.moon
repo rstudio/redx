@@ -11,14 +11,14 @@ process_request = (@) ->
         ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
         ngx.req.set_header("X-Redx-Frontend-Name", frontend['frontend_key'])
         ngx.req.set_header("X-Redx-Backend-Name", frontend['backend_key'])
-        upstream = redis.fetch_upstream(@, frontend['backend_key'], false)
-        if upstream == nil
+        server = redis.fetch_server(@, frontend['backend_key'], false)
+        if server == nil
             ngx.req.set_header("X-Redx-Backend-Cache-Hit", "false")
         else
             ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
-            ngx.req.set_header("X-Redx-Upstream", upstream)
-            print("UPSTREAM: " .. upstream)
-            ngx.var.upstream = upstream
+            ngx.req.set_header("X-Redx-Backend-Server", server)
+            print("SERVER: " .. server)
+            ngx.var.upstream = server
 
 webserver = class extends lapis.Application
     '/': =>

@@ -123,10 +123,10 @@ M.save_batch_data = (@, data, overwrite=false) ->
             red\del('backend:' .. backend["name"]) if overwrite
             -- ensure servers are a table
             backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
-            for upstream in *backend['servers']
-                unless upstream == nil
-                    print('adding backend: ' .. backend["name"] .. ' ' .. upstream)
-                    red\sadd('backend:' .. backend["name"], upstream)
+            for server in *backend['servers']
+                unless server == nil
+                    print('adding backend: ' .. backend["name"] .. ' ' .. server)
+                    red\sadd('backend:' .. backend["name"], server)
     redis.commit(@, red, "failed to save data: ")
 
 M.delete_batch_data = (@, data) ->
@@ -142,10 +142,10 @@ M.delete_batch_data = (@, data) ->
             if backend['servers']
                 -- ensure servers are a table
                 backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
-                for upstream in *backend['servers']
-                    unless upstream == nil
-                        print('deleting backend: ' .. backend["name"] .. ' ' .. upstream)
-                        red\srem('backend:' .. backend["name"], upstream)
+                for server in *backend['servers']
+                    unless server == nil
+                        print('deleting backend: ' .. backend["name"] .. ' ' .. server)
+                        red\srem('backend:' .. backend["name"], server)
     redis.commit(@, red, "failed to save data: ")
 
 M.fetch_frontend = (@, max_path_length=3) ->
@@ -167,7 +167,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
             return { frontend_key: key, backend_key: resp }
     return nil
 
-M.fetch_upstream = (@, backend_key) ->
+M.fetch_server = (@, backend_key) ->
     red = redis.connect(@)
     resp, err = red\srandmember('backend:' .. backend_key)
     print('Failed getting backend: ' .. err) unless err == nil

@@ -1,7 +1,9 @@
 redx (experimental)
 ======
 
-Redx is a lua-based approach of having a dynamic configuration of nginx. Its greatly inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs inside nginx itself) to manage the many-to-one relationships between frontends that points to a backend. Frontends are host and paths, while backends is a list of servers.
+Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as the data store. Its inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends. 
+
+One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments that are nearly constantly changing their large nginx config due to cases such as elastic backends or new user signups. Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have high availability and scalability on your load balancing layer. 
 
 How it works
 ============
@@ -27,7 +29,7 @@ To see redx logs, see `/var/log/nginx/[access,error].log`
 API
 ===
 
-### (GET|POST|PUT|DELETE) /frontends/<url>/<backend_name>
+### (GET|POST|PUT|DELETE) /frontends/\<url\>/\<backend_name\>
 
 The `frontends` endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
 
@@ -48,19 +50,7 @@ curl -X POST localhost:8081/frontends/myhost.com%2Ftest/mybackend
 curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest
 ```
 
-### (DELETE) /flush
-
-Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.
-
-#### Examples
-
-##### `DELETE` example
-
-```
-curl -X DELETE localhost:8081/flush
-```
-
-### (GET|POST|PUT|DELETE) /backends/<name>/<server>
+### (GET|POST|PUT|DELETE) /backends/\<name\>/\<server\>
 
 The `backends` endpoint allows you to get, update, replace, or delete a backend. Using the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit. Be sure to character escape as needed.
 

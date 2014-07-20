@@ -9,11 +9,11 @@ events {
 http {
   include mime.types;
 
-  lua_package_path "/opt/lua-resty-redis/lib/?.lua;;./lib/?.lua;./conf/?.lua;./bin/?.lua";
+  lua_package_path ";./lua/lib/?.lua;./lua/conf/?.lua;./lua/bin/?.lua";
 
   resolver 8.8.8.8;
 
-  init_by_lua_file './bin/init_redx.lua';
+  init_by_lua_file './lua/bin/init_redx.lua';
 
   upstream fallback {
     server localhost:7700;
@@ -27,7 +27,7 @@ http {
 
     location / {
       default_type application/json;
-      content_by_lua_file "./bin/api.lua";
+      content_by_lua_file "./lua/bin/api.lua";
     }
   }
 

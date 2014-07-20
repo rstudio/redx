@@ -1,0 +1,288 @@
+local M = { }
+inspect = require('inspect')
+local escape_pattern
+do
+  local _obj_0 = require("lapis.util")
+  escape_pattern = _obj_0.escape_pattern
+end
+local split
+split = function(str, delim)
+  str = str .. delim
+  local _accum_0 = { }
+  local _len_0 = 1
+  for part in str:gmatch("(.-)" .. escape_pattern(delim)) do
+    _accum_0[_len_0] = part
+    _len_0 = _len_0 + 1
+  end
+  return _accum_0
+end
+M.connect = function(self)
+  local redis = require("resty.redis")
+  local red = redis:new()
+  red:set_timeout(20000)
+  red:set_keepalive(20000)
+  local ok, err = red:connect(config.redis_host, config.redis_port)
+  if not ok then
+    print("Error connecting to redis: " .. err)
+    self.msg = "error connectiong: " .. err
+    self.status = 500
+  else
+    print('Connected to redis')
+    return red
+  end
+end
+M.commit = function(self, red, error_msg)
+  local results, err = red:commit_pipeline()
+  if not results then
+    self.msg = error_msg .. err
+    self.status = 500
+  else
+    self.msg = "OK"
+    self.status = 404
+  end
+end
+M.flush = function(self)
+  local red = redis.connect(self)
+  local ok, err = red:flushdb()
+  print(ok)
+  print(err)
+  if ok then
+    self.status = 200
+    self.msg = "OK"
+  else
+    self.status = 500
+    self.msg = err
+  end
+end
+M.get_data = function(self, asset_type, asset_name)
+  local red = redis.connect(self)
+  local _exp_0 = asset_type
+  if 'frontends' == _exp_0 then
+    self.resp, self.msg = red:get('frontend:' .. asset_name)
+    if not (self.resp) then
+      self.status = 500
+    end
+  elseif 'backends' == _exp_0 then
+    self.resp, self.msg = red:smembers('backend:' .. asset_name)
+  else
+    self.status = 400
+    self.msg = 'Bad asset type. Must be "frontends" or "backends"'
+  end
+  if self.resp then
+    if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
+      self.resp = nil
+    end
+    self.status = 200
+    self.msg = "OK"
+  else
+    if not (self.status) then
+      self.status = 500
+    end
+    if not (self.msg) then
+      self.msg = 'Unknown failutre'
+    end
+  end
+end
+M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
+  if overwrite == nil then
+    overwrite = false
+  end
+  local red = redis.connect(self)
+  local _exp_0 = asset_type
+  if 'frontends' == _exp_0 then
+    local ok, err = red:set('frontend:' .. asset_name, asset_value)
+  elseif 'backends' == _exp_0 then
+    red = redis.connect(self)
+    if overwrite then
+      red:init_pipeline()
+    end
+    if overwrite then
+      red:del('backend:' .. asset_name)
+    end
+    local ok, err = red:sadd('backend:' .. asset_name, asset_value)
+    if overwrite then
+      redis.commit(self, red, "Failed to save backend: ")
+    end
+  else
+    local ok = false
+    self.status = 400
+    self.msg = 'Bad asset type. Must be "frontends" or "backends"'
+  end
+  if ok == nil then
+    self.status = 200
+    self.msg = "OK"
+  else
+    self.status = 500
+    local err
+    if err == nil then
+      err = "unknown"
+    end
+    self.msg = "Failed to save backend: " .. err
+  end
+end
+M.delete_data = function(self, asset_type, asset_name, asset_value)
+  if asset_value == nil then
+    asset_value = nil
+  end
+  local red = redis.connect(self)
+  local _exp_0 = asset_type
+  if 'frontends' == _exp_0 then
+    local resp
+    resp, self.msg = red:del('frontend:' .. asset_name)
+    if not (self.resp) then
+      self.status = 500
+    end
+  elseif 'backends' == _exp_0 then
+    if asset_value == nil then
+      local resp
+      resp, self.msg = red:del('backend:' .. asset_name)
+    else
+      local resp
+      resp, self.msg = red:srem('backend:' .. asset_name, asset_value)
+    end
+  else
+    self.status = 400
+    self.msg = 'Bad asset type. Must be "frontends" or "backends"'
+  end
+  if resp == nil then
+    if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
+      self.resp = nil
+    end
+    self.status = 200
+    if not (self.msg) then
+      self.msg = "OK"
+    end
+  else
+    if not (self.status) then
+      self.status = 500
+    end
+    if not (self.msg) then
+      self.msg = 'Unknown failutre'
+    end
+  end
+end
+M.save_batch_data = function(self, data, overwrite)
+  if overwrite == nil then
+    overwrite = false
+  end
+  local red = redis.connect(self)
+  red:init_pipeline()
+  if data['frontends'] then
+    local _list_0 = data['frontends']
+    for _index_0 = 1, #_list_0 do
+      local frontend = _list_0[_index_0]
+      print(inspect(frontend))
+      if overwrite then
+        red:del('frontend:' .. frontend['url'])
+      end
+      if not (frontend['backend_name'] == nil) then
+        print('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
+        red:set('frontend:' .. frontend['url'], frontend['backend_name'])
+      end
+    end
+  end
+  if data["backends"] then
+    local _list_0 = data['backends']
+    for _index_0 = 1, #_list_0 do
+      local backend = _list_0[_index_0]
+      if overwrite then
+        red:del('backend:' .. backend["name"])
+      end
+      if not (type(backend['servers']) == 'table') then
+        backend['servers'] = {
+          backend['servers']
+        }
+      end
+      local _list_1 = backend['servers']
+      for _index_1 = 1, #_list_1 do
+        local server = _list_1[_index_1]
+        if not (server == nil) then
+          print('adding backend: ' .. backend["name"] .. ' ' .. server)
+          red:sadd('backend:' .. backend["name"], server)
+        end
+      end
+    end
+  end
+  return redis.commit(self, red, "failed to save data: ")
+end
+M.delete_batch_data = function(self, data)
+  local red = redis.connect(self)
+  red:init_pipeline()
+  if data['frontends'] then
+    local _list_0 = data['frontends']
+    for _index_0 = 1, #_list_0 do
+      local frontend = _list_0[_index_0]
+      print('deleting frontend: ' .. frontend['url'])
+      red:del('frontend:' .. frontend['url'])
+    end
+  end
+  if data["backends"] then
+    local _list_0 = data['backends']
+    for _index_0 = 1, #_list_0 do
+      local backend = _list_0[_index_0]
+      if backend['servers'] == nil then
+        red:del('backend:' .. backend["name"])
+      end
+      if backend['servers'] then
+        if not (type(backend['servers']) == 'table') then
+          backend['servers'] = {
+            backend['servers']
+          }
+        end
+        local _list_1 = backend['servers']
+        for _index_1 = 1, #_list_1 do
+          local server = _list_1[_index_1]
+          if not (server == nil) then
+            print('deleting backend: ' .. backend["name"] .. ' ' .. server)
+            red:srem('backend:' .. backend["name"], server)
+          end
+        end
+      end
+    end
+  end
+  return redis.commit(self, red, "failed to save data: ")
+end
+M.fetch_frontend = function(self, max_path_length)
+  if max_path_length == nil then
+    max_path_length = 3
+  end
+  local path = self.req.parsed_url['path']
+  local path_parts = split(path, '/')
+  local keys = { }
+  local p = ''
+  local count = 0
+  for k, v in pairs(path_parts) do
+    if not (v == nil or v == '') then
+      if count < (max_path_length) then
+        count = count + 1
+        p = p .. "/" .. tostring(v)
+        table.insert(keys, 1, self.req.parsed_url['host'] .. p)
+      end
+    end
+  end
+  local red = redis.connect(self)
+  for _index_0 = 1, #keys do
+    local key = keys[_index_0]
+    local resp, err = red:get('frontend:' .. key)
+    if type(resp) == 'string' then
+      return {
+        frontend_key = key,
+        backend_key = resp
+      }
+    end
+  end
+  return nil
+end
+M.fetch_server = function(self, backend_key)
+  local red = redis.connect(self)
+  local resp, err = red:srandmember('backend:' .. backend_key)
+  if not (err == nil) then
+    print('Failed getting backend: ' .. err)
+  end
+  if type(resp) == 'string' then
+    return resp
+  else
+    return nil
+  end
+end
+return M

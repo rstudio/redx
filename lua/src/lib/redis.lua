@@ -62,18 +62,25 @@ M.get_data = function(self, asset_type, asset_name)
     if not (self.resp) then
       self.status = 500
     end
+    if getmetatable(self.resp) == nil then
+      self.resp = nil
+    end
   elseif 'backends' == _exp_0 then
     self.resp, self.msg = red:smembers('backend:' .. asset_name)
+    if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
+      self.resp = nil
+    end
   else
     self.status = 400
     self.msg = 'Bad asset type. Must be "frontends" or "backends"'
   end
   if self.resp then
-    if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
-      self.resp = nil
-    end
     self.status = 200
     self.msg = "OK"
+  end
+  if self.resp == nil then
+    self.status = 404
+    self.msg = "Entry does not exist"
   else
     if not (self.status) then
       self.status = 500

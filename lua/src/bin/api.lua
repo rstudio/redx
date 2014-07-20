@@ -6,10 +6,10 @@ do
   local _obj_0 = require("lapis.application")
   respond_to = _obj_0.respond_to
 end
-local from_json
+local from_json, unescape
 do
   local _obj_0 = require("lapis.util")
-  from_json = _obj_0.from_json
+  from_json, unescape = _obj_0.from_json, _obj_0.unescape
 end
 local json_response
 json_response = function(self)
@@ -40,23 +40,33 @@ do
         for k, v in pairs(self.req.params_post) do
           self.body = from_json(k)
         end
+        if not (self.body) then
+          self.status = 400
+          self.msg = "Missing json body"
+        end
       end,
       POST = function(self)
-        redis.save_batch_data(self, self.body, false)
+        if self.body then
+          redis.save_batch_data(self, self.body, false)
+        end
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       PUT = function(self)
-        redis.save_batch_data(self, self.body, true)
+        if self.body then
+          redis.save_batch_data(self, self.body, true)
+        end
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       DELETE = function(self)
-        redis.delete_batch_data(self, self.body)
+        if self.body then
+          redis.delete_batch_data(self, self.body)
+        end
         return {
           status = self.status,
           json = json_response(self)
@@ -65,14 +75,14 @@ do
     }),
     ['/:type/:name'] = respond_to({
       GET = function(self)
-        redis.get_data(self, self.params.type, self.params.name)
+        redis.get_data(self, self.params.type, unescape(self.params.name))
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       DELETE = function(self)
-        redis.delete_data(self, self.params.type, self.params.name)
+        redis.delete_data(self, self.params.type, unescape(self.params.name))
         return {
           status = self.status,
           json = json_response(self)
@@ -81,21 +91,21 @@ do
     }),
     ['/:type/:name/:value'] = respond_to({
       POST = function(self)
-        redis.save_data(self, self.params.type, self.params.name, self.params.value, false)
+        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), false)
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       PUT = function(self)
-        redis.save_data(self, self.params.type, self.params.name, self.params.value, true)
+        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), true)
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       DELETE = function(self)
-        redis.delete_data(self, self.params.type, self.params.name, self.params.value)
+        redis.delete_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value))
         return {
           status = self.status,
           json = json_response(self)

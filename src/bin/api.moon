@@ -3,7 +3,7 @@ export inspect = require('inspect')
 
 lapis = require "lapis"
 import respond_to from require "lapis.application"
-import from_json from require "lapis.util"
+import from_json, unescape from require "lapis.util"
 
 json_response = (@) ->
     json = {}
@@ -22,35 +22,38 @@ webserver = class extends lapis.Application
         before: =>
             for k,v in pairs @req.params_post do
                 @body = from_json(k)
+            unless @body
+                @status = 400
+                @msg = "Missing json body"
         POST: =>
-            redis.save_batch_data(@, @body, false)
+            redis.save_batch_data(@, @body, false) if @body
             status: @status, json: json_response(@)
         PUT: =>
-            redis.save_batch_data(@, @body, true)
+            redis.save_batch_data(@, @body, true) if @body
             status: @status, json: json_response(@)
         DELETE: =>
-            redis.delete_batch_data(@, @body)
+            redis.delete_batch_data(@, @body) if @body
             status: @status, json: json_response(@)
     }
 
     '/:type/:name': respond_to {
         GET: =>
-            redis.get_data(@, @params.type, @params.name)
+            redis.get_data(@, @params.type, unescape(@params.name))
             status: @status, json: json_response(@)
         DELETE: =>
-            redis.delete_data(@, @params.type, @params.name)
+            redis.delete_data(@, @params.type, unescape(@params.name))
             status: @status, json: json_response(@)
     }
 
     '/:type/:name/:value': respond_to {
         POST: =>
-            redis.save_data(@, @params.type, @params.name, @params.value, false)
+            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), false)
             status: @status, json: json_response(@)
         PUT: =>
-            redis.save_data(@, @params.type, @params.name, @params.value, true)
+            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), true)
             status: @status, json: json_response(@)
         DELETE: =>
-            redis.delete_data(@, @params.type, @params.name, @params.value)
+            redis.delete_data(@, @params.type, unescape(@params.name), unescape(@params.value))
             status: @status, json: json_response(@)
     }
 

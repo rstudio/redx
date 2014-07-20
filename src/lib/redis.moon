@@ -50,15 +50,20 @@ M.get_data = (@, asset_type, asset_name) ->
         when 'frontends'
             @resp, @msg = red\get('frontend:' .. asset_name)
             @status = 500 unless @resp
+            if getmetatable(@resp) == nil
+                @resp = nil
         when 'backends'
             @resp, @msg = red\smembers('backend:' .. asset_name)
+            @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'
     if @resp
-        @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         @status = 200
         @msg = "OK"
+    if @resp == nil
+        @status = 404
+        @msg = "Entry does not exist"
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg

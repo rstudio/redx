@@ -3,3 +3,4 @@
 logs/
 nginx.conf.compiled
 *.lock
+nginx.conf

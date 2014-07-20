@@ -1,8 +1,6 @@
-print("foooooo")
 export redis = require 'redis'
 export inspect = require('inspect')
 
-print("foooooo")
 lapis = require "lapis"
 import respond_to from require "lapis.application"
 import from_json from require "lapis.util"
@@ -24,7 +22,6 @@ webserver = class extends lapis.Application
         before: =>
             for k,v in pairs @req.params_post do
                 @body = from_json(k)
-            print(inspect(@body))
         POST: =>
             redis.save_batch_data(@, @body, false)
             status: @status, json: json_response(@)

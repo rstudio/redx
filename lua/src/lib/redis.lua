@@ -38,7 +38,7 @@ M.commit = function(self, red, error_msg)
     self.status = 500
   else
     self.msg = "OK"
-    self.status = 404
+    self.status = 200
   end
 end
 M.flush = function(self)

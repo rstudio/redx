@@ -30,7 +30,7 @@ M.commit = (@, red, error_msg) ->
         @status = 500
     else
         @msg = "OK"
-        @status = 404
+        @status = 200
 
 M.flush = (@) ->
     red = redis.connect(@)

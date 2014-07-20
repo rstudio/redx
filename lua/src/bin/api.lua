@@ -1,7 +1,5 @@
-print("foooooo")
 redis = require('redis')
 inspect = require('inspect')
-print("foooooo")
 local lapis = require("lapis")
 local respond_to
 do
@@ -42,7 +40,6 @@ do
         for k, v in pairs(self.req.params_post) do
           self.body = from_json(k)
         end
-        return print(inspect(self.body))
       end,
       POST = function(self)
         redis.save_batch_data(self, self.body, false)

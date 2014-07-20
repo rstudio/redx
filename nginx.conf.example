@@ -9,11 +9,11 @@ events {
 http {
   include mime.types;
 
-  lua_package_path ";./lua/lib/?.lua;./lua/conf/?.lua;./lua/bin/?.lua";
+  lua_package_path ";./lua/src/lib/?.lua;./lua/conf/?.lua;./lua/src/bin/?.lua";
 
   resolver 8.8.8.8;
 
-  init_by_lua_file './lua/bin/init_redx.lua';
+  init_by_lua_file './lua/src/bin/init_redx.lua';
 
   upstream fallback {
     server localhost:7700;
@@ -27,7 +27,7 @@ http {
 
     location / {
       default_type application/json;
-      content_by_lua_file "./lua/bin/api.lua";
+      content_by_lua_file "./lua/src/bin/api.lua";
     }
   }
 
@@ -41,7 +41,7 @@ http {
 
     location / {
       default_type application/json;
-      access_by_lua_file "./bin/main.lua";
+      access_by_lua_file "./lua/src/bin/main.lua";
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "upgrade";

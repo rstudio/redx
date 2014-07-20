@@ -1,10 +1,12 @@
 DEPENDENCIES
   apt
+  curl
   redis
     git: git@github.com:miah/chef-redis.git
     revision: 5b7e8585b23dcef0de3ec6cfbb31ad75fc912d8e
   redx
     path: ../redx-cookbook
+  vim
 
 GRAPH
   apt (2.4.0)
@@ -13,6 +15,7 @@ GRAPH
   build-essential (2.0.4)
   chef-sugar (2.0.0)
   chef_handler (1.1.6)
+  curl (2.0.0)
   discovery (0.2.2)
   dmg (2.2.0)
   git (4.0.2)
@@ -65,6 +68,7 @@ GRAPH
     yum (~> 3.0)
     yum-epel (>= 0.0.0)
   stunnel (2.1.0)
+  vim (1.1.2)
   windows (1.32.3)
     chef_handler (>= 0.0.0)
   yum (3.2.2)

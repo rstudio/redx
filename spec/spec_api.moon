@@ -168,12 +168,10 @@ describe "redx_api", ->
         assert.same 404, code
 
     it "should get 400 on batch POST with no body #batch_api", ->
-        pending('disabled')
         response, code, headers = make_json_request("/batch", "POST")
         assert.same 400, code
     
     it "should batch POST #batch_api", ->
-        pending('disabled')
         response, code, headers = make_json_request("/batch", "POST", json_body)
         assert.same 200, code
 
@@ -182,6 +180,32 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/backends/menlobackend")
         assert.same response, { message: "OK", data: {"tesc.edu","menloparkmuseum.org"} }
+
+    it "should batch PUT #batch_api", ->
+        response, code, headers = make_json_request("/batch", "POST", json_body)
+        assert.same 200, code
+
+        -- check that the db was updated
+        response, code, headers = make_json_request("/frontends/#{escape('test.com/menlo/park')}")
+        assert.same response, { message: "OK", data: "menlobackend" }
+        response, code, headers = make_json_request("/backends/menlobackend")
+        assert.same response, { message: "OK", data: {"tesc.edu","menloparkmuseum.org"} }
+
+        -- update json_body
+        temp_json_body = json_body
+        temp_json_body['frontends'][1]['backend_name'] = '6757'
+        temp_json_body['backends'][1]['servers'] = { 'apple.com' }
+
+        response, code, headers = make_json_request("/batch", "PUT", temp_json_body)
+        assert.same 200, code
+
+        -- check that removed frontend and backends from json_body are not in redis db
+        response, code, headers = make_json_request("/frontends/#{escape(temp_json_body['frontends'][1]['url'])}")
+        assert.same 200, code
+        assert.same response['data'], '6757'
+        response, code, headers = make_json_request("/backends/#{escape(temp_json_body['backends'][1]['name'])}")
+        assert.same 200, code
+        assert.same response['data'], { 'apple.com' }
 
     it "should flush db #flush_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "POST")

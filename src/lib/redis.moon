@@ -35,8 +35,6 @@ M.commit = (@, red, error_msg) ->
 M.flush = (@) ->
     red = redis.connect(@)
     ok, err = red\flushdb()
-    print(ok)
-    print(err)
     if ok
         @status = 200
         @msg = "OK"
@@ -118,7 +116,6 @@ M.save_batch_data = (@, data, overwrite=false) ->
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
-            print(inspect(frontend))
             red\del('frontend:' .. frontend['url']) if overwrite
             unless frontend['backend_name'] == nil
                 print('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])

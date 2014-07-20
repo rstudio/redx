@@ -44,8 +44,6 @@ end
 M.flush = function(self)
   local red = redis.connect(self)
   local ok, err = red:flushdb()
-  print(ok)
-  print(err)
   if ok then
     self.status = 200
     self.msg = "OK"
@@ -178,7 +176,6 @@ M.save_batch_data = function(self, data, overwrite)
     local _list_0 = data['frontends']
     for _index_0 = 1, #_list_0 do
       local frontend = _list_0[_index_0]
-      print(inspect(frontend))
       if overwrite then
         red:del('frontend:' .. frontend['url'])
       end

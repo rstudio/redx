@@ -174,12 +174,10 @@ return describe("redx_api", function()
     return assert.same(404, code)
   end)
   it("should get 400 on batch POST with no body #batch_api", function()
-    pending('disabled')
     local response, code, headers = make_json_request("/batch", "POST")
     return assert.same(400, code)
   end)
   it("should batch POST #batch_api", function()
-    pending('disabled')
     local response, code, headers = make_json_request("/batch", "POST", json_body)
     assert.same(200, code)
     response, code, headers = make_json_request("/frontends/" .. tostring(escape('test.com/menlo/park')))
@@ -194,6 +192,38 @@ return describe("redx_api", function()
         "tesc.edu",
         "menloparkmuseum.org"
       }
+    })
+  end)
+  it("should batch PUT #batch_api", function()
+    local response, code, headers = make_json_request("/batch", "POST", json_body)
+    assert.same(200, code)
+    response, code, headers = make_json_request("/frontends/" .. tostring(escape('test.com/menlo/park')))
+    assert.same(response, {
+      message = "OK",
+      data = "menlobackend"
+    })
+    response, code, headers = make_json_request("/backends/menlobackend")
+    assert.same(response, {
+      message = "OK",
+      data = {
+        "tesc.edu",
+        "menloparkmuseum.org"
+      }
+    })
+    local temp_json_body = json_body
+    temp_json_body['frontends'][1]['backend_name'] = '6757'
+    temp_json_body['backends'][1]['servers'] = {
+      'apple.com'
+    }
+    response, code, headers = make_json_request("/batch", "PUT", temp_json_body)
+    assert.same(200, code)
+    response, code, headers = make_json_request("/frontends/" .. tostring(escape(temp_json_body['frontends'][1]['url'])))
+    assert.same(200, code)
+    assert.same(response['data'], '6757')
+    response, code, headers = make_json_request("/backends/" .. tostring(escape(temp_json_body['backends'][1]['name'])))
+    assert.same(200, code)
+    return assert.same(response['data'], {
+      'apple.com'
     })
   end)
   return it("should flush db #flush_api", function()

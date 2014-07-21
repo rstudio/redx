@@ -19,8 +19,9 @@ install:
   - make
   - sudo make install
   - cd -
+  - cp nginx.conf.example nginx.conf
 
 script:
-  - "lapis server &"
+  - "lapis server --trace &"
   - "sleep 5"
   - "busted lua/spec"

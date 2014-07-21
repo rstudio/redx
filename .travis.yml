@@ -17,7 +17,7 @@ install:
   - cd ngx_openresty-1.7.2.1/
   - ./configure --with-luajit
   - make
-  - make install
+  - sudo make install
   - cd -
 
 script:

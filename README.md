@@ -30,7 +30,7 @@ To see redx logs, see `/var/log/nginx/[access,error].log`
 Testing
 =======
 
-Redx uses a testing framework, [busted](http://olivinelabs.com/busted/), to run integration tests. To run these tests, execute `busted lua/spec`
+Redx uses a testing framework, [busted](http://olivinelabs.com/busted/), to run integration tests. To run these tests, execute `busted lua/spec`. Continuous integration is setup with [travis ci](https://travis-ci.org/rstudio/redx).
 
 API
 ===

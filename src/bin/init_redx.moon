@@ -1,4 +1,3 @@
-print('fooo')
 export redis = require 'redis'
 export config = require 'config'
 

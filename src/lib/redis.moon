@@ -164,6 +164,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
                 table.insert(keys, 1, @req.parsed_url['host'] .. p)
     red = redis.connect(@)
     for key in *keys do
+        print("Frontend:#{key}")
         resp, err = red\get('frontend:' .. key)
         if type(resp) == 'string'
             return { frontend_key: key, backend_key: resp }

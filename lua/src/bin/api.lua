@@ -1,4 +1,3 @@
-redis = require('redis')
 inspect = require('inspect')
 local lapis = require("lapis")
 local respond_to

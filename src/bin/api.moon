@@ -1,4 +1,3 @@
-export redis = require 'redis'
 export inspect = require('inspect')
 
 lapis = require "lapis"

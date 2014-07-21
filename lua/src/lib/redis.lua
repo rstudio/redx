@@ -267,6 +267,7 @@ M.fetch_frontend = function(self, max_path_length)
   local red = redis.connect(self)
   for _index_0 = 1, #keys do
     local key = keys[_index_0]
+    print("Frontend:" .. tostring(key))
     local resp, err = red:get('frontend:' .. key)
     if type(resp) == 'string' then
       return {

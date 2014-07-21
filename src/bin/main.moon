@@ -1,7 +1,6 @@
 export redis = require 'redis'
 
 lapis = require "lapis"
-import respond_to from require "lapis.application"
 
 process_request = (@) ->
     frontend = redis.fetch_frontend(@, 3)

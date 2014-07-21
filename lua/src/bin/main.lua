@@ -1,10 +1,5 @@
 redis = require('redis')
 local lapis = require("lapis")
-local respond_to
-do
-  local _obj_0 = require("lapis.application")
-  respond_to = _obj_0.respond_to
-end
 local process_request
 process_request = function(self)
   local frontend = redis.fetch_frontend(self, 3)

@@ -5,8 +5,7 @@ env:
   - LUA="luajit"
 
 install:
-  - sudo apt-get install luajit
-  - sudo apt-get install luarocks
+  - sudo apt-get install luajit luarocks openssl
   - sudo luarocks install luafilesystem
   - sudo luarocks install luasec
   - sudo luarocks install busted

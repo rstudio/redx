@@ -106,12 +106,13 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
+    table.sort(response['data'])
     assert.same(200, code)
     assert.same(response, {
       message = "OK",
       data = {
-        'shinyapps.io:80',
-        'rstudio.com:80'
+        'rstudio.com:80',
+        'shinyapps.io:80'
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('cran.rstudio.org:80')), "PUT")
@@ -135,12 +136,13 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
+    table.sort(response['data'])
     assert.same(200, code)
     assert.same(response, {
       message = "OK",
       data = {
-        'shinyapps.io:80',
-        'rstudio.com:80'
+        'rstudio.com:80',
+        'shinyapps.io:80'
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "DELETE")
@@ -160,12 +162,13 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
+    table.sort(response['data'])
     assert.same(200, code)
     assert.same(response, {
       message = "OK",
       data = {
-        'shinyapps.io:80',
-        'rstudio.com:80'
+        'rstudio.com:80',
+        'shinyapps.io:80'
       }
     })
     response, code, headers = make_json_request("/backends/5555", "DELETE")
@@ -186,11 +189,14 @@ return describe("redx_api", function()
       data = "menlobackend"
     })
     response, code, headers = make_json_request("/backends/menlobackend")
+    if response['data'] then
+      table.sort(response['data'])
+    end
     return assert.same(response, {
       message = "OK",
       data = {
-        "tesc.edu",
-        "menloparkmuseum.org"
+        "menloparkmuseum.org",
+        "tesc.edu"
       }
     })
   end)
@@ -203,11 +209,14 @@ return describe("redx_api", function()
       data = "menlobackend"
     })
     response, code, headers = make_json_request("/backends/menlobackend")
+    if response['data'] then
+      table.sort(response['data'])
+    end
     assert.same(response, {
       message = "OK",
       data = {
-        "tesc.edu",
-        "menloparkmuseum.org"
+        "menloparkmuseum.org",
+        "tesc.edu"
       }
     })
     local temp_json_body = json_body

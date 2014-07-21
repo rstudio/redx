@@ -80,7 +80,6 @@ describe "redx_main", ->
 
     it "make regular invalid request", ->
         response, code, headers = make_request("/bad_url")
-        print(inspect(headers))
         assert.same 502, code
 
     it "make request to bad host", ->

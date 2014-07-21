@@ -117,7 +117,7 @@ describe "redx_api", ->
 
         -- check its actually in the db correctly
         response, code, headers = make_json_request("/backends/5555")
-        table.sort(response['data'])
+        table.sort(response['data']) if response['data']
         assert.same 200, code
         assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
 
@@ -141,7 +141,7 @@ describe "redx_api", ->
 
         -- check its actually in the db correctly
         response, code, headers = make_json_request("/backends/5555")
-        table.sort(response['data'])
+        table.sort(response['data']) if response['data']
         assert.same 200, code
         assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
 
@@ -160,7 +160,7 @@ describe "redx_api", ->
 
         -- check its actually in the db correctly
         response, code, headers = make_json_request("/backends/5555")
-        table.sort(response['data'])
+        table.sort(response['data']) if response['data']
         assert.same 200, code
         assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
 

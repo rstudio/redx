@@ -106,7 +106,9 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
-    table.sort(response['data'])
+    if response['data'] then
+      table.sort(response['data'])
+    end
     assert.same(200, code)
     assert.same(response, {
       message = "OK",
@@ -136,7 +138,9 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
-    table.sort(response['data'])
+    if response['data'] then
+      table.sort(response['data'])
+    end
     assert.same(200, code)
     assert.same(response, {
       message = "OK",
@@ -162,7 +166,9 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('shinyapps.io:80')), "POST")
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555")
-    table.sort(response['data'])
+    if response['data'] then
+      table.sort(response['data'])
+    end
     assert.same(200, code)
     assert.same(response, {
       message = "OK",

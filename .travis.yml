@@ -6,7 +6,7 @@ env:
 install:
   - sudo apt-get update
   - sudo apt-get install luajit luarocks
-  - sudo apt-get install libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl make
+  - sudo apt-get install libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl make redis-server
   - sudo luarocks install luafilesystem
   - sudo luarocks install busted
   - sudo luarocks install lapis

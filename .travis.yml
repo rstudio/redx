@@ -6,9 +6,8 @@ env:
 
 install:
   - sudo apt-get update
-  - sudo apt-get install luajit luarocks openssl
+  - sudo apt-get install luajit luarocks
   - sudo luarocks install luafilesystem
-  - sudo luarocks install luasec
   - sudo luarocks install busted
   - sudo luarocks install lapis
   - sudo luarocks install moonscript

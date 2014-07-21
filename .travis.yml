@@ -5,7 +5,6 @@ env:
   - LUA="luajit"
 
 install:
-  - sudo apt-get update
   - sudo apt-get install luajit luarocks
   - sudo luarocks install luafilesystem
   - sudo luarocks install busted
@@ -13,4 +12,4 @@ install:
   - sudo luarocks install moonscript
   - sudo luarocks install inspect
 
-script: "busted lua/spec"
+script: "lapis server &; sleep 5; busted lua/spec"

@@ -1,0 +1,21 @@
+language: erlang
+
+env:
+  - LUA=""
+  - LUA="luajit"
+
+branches:
+  only:
+    - master
+
+install:
+  - sudo apt-get install luajit
+  - sudo apt-get install luarocks
+  - sudo luarocks install luafilesystem
+  - sudo luarocks install luasec
+  - sudo luarocks install busted
+  - sudo luarocks install lapis
+  - sudo luarocks install moonscript
+  - sudo luarocks install inspect
+
+script: "busted lua/spec"

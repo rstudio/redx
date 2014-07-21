@@ -12,4 +12,7 @@ install:
   - sudo luarocks install moonscript
   - sudo luarocks install inspect
 
-script: "lapis server &; sleep 5; busted lua/spec"
+script:
+  - "lapis server &"
+  - "sleep 5"
+  - " busted lua/spec"

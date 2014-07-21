@@ -5,14 +5,21 @@ env:
   - LUA="luajit"
 
 install:
+  - sudo apt-get update
   - sudo apt-get install luajit luarocks
+  - apt-get install libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl make
   - sudo luarocks install luafilesystem
   - sudo luarocks install busted
   - sudo luarocks install lapis
   - sudo luarocks install moonscript
   - sudo luarocks install inspect
+  - tar xzvf ngx_openresty-VERSION.tar.gz
+  - cd ngx_openresty-VERSION/
+  - ./configure --with-luajit
+  - make
+  - make install
 
 script:
   - "lapis server &"
   - "sleep 5"
-  - " busted lua/spec"
+  - "busted lua/spec"

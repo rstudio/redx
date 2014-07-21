@@ -24,7 +24,11 @@ install:
   - cd -
   - cp nginx.conf.example nginx.conf
 
-script:
+before_script:
   - "lapis server --trace &"
-  - "sleep 5"
+
+script:
   - "busted lua/spec"
+
+after_script:
+  - "sudo killall nginx"

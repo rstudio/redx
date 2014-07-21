@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/rstudio/redx.svg)](https://travis-ci.org/rstudio/redx)
 redx (experimental)
 ======
 

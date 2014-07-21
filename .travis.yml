@@ -4,10 +4,6 @@ env:
   - LUA=""
   - LUA="luajit"
 
-branches:
-  only:
-    - master
-
 install:
   - sudo apt-get install luajit
   - sudo apt-get install luarocks

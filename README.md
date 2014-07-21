@@ -26,6 +26,11 @@ Setup and start vagrant
 The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
 To see redx logs, see `/var/log/nginx/[access,error].log`
 
+Testing
+=======
+
+Redx uses a testing framework, [busted](http://olivinelabs.com/busted/), to run integration tests. To run these tests, execute `busted lua/spec`
+
 API
 ===
 

@@ -20,7 +20,7 @@ Vagrant.configure("2") do |config|
 
     chef.json = {
       "redx" => {
-       # "dir" => "/home/vagrant/redx",
+        "dir" => "/home/vagrant/redx",
         "nginx" => {
           "api_ports" => [8081],
           "main_ports" => [8080]

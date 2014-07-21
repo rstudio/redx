@@ -9,9 +9,13 @@ One of the main benefits of redx is the ability to update your nginx config with
 How it works
 ============
 
-Redx is composed of two components; the api and main. The api is a restful api embedded in lua and runs within the nginx process. It runs on a specific port and is manages the backends associated to references in the redis database.
+## The Components
+Redx is composed of two components; the api and main. The api is a restful api embedded in lua and runs within the nginx process. It runs on its own port (for ease of firewall security) and is manages the frontends and backends in the nginx config by editing the redis database.
 
-The other component is main, and this is what takes regular traffic, looks up the proper backend based on host and path.
+The other component is main, and this is what takes regular traffic from your users. It looks up the proper backend to proxy the request to based on the host and path.
+
+## The fallback
+In the event that there isn't a frontend or backend match for an incoming request **OR** the backend server the request was proxied to isn't responding, the request is sent to the `fallback`. This is typically your application server, which handles these failure scenario. Several headers are added to the request to help your application server understand the context in which the request is coming in. In some cases, you may want to update redx by hitting the API and insert the missing frontend and/or backend and sent them back to nginx, or maybe you want to forward them to a custom 404 page. Its up to you to decide what the behavior you want it to be.
 
 Setup Dev Environment
 =====================

@@ -4,6 +4,8 @@ M = {}
 M.redis_host = '127.0.0.1'
 -- redis port
 M.redis_port = '6379'
+-- redis password
+M.redis_password = ''
 
 -- the max number of path parts to look up
 -- examples

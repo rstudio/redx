@@ -11,14 +11,20 @@ M.connect = (@) ->
     -- connect to redis
     redis = require "resty.redis"
     red = redis\new()
-    red\set_timeout(20000)
-    red\set_keepalive(20000)
+    red\set_timeout(5000)
+     -- red\set_keepalive(5000, 100)
     ok, err = red\connect(config.redis_host, config.redis_port)
+    if type(config.redis_password) == 'string' and #config.redis_password > 0
+        print("Authenticating...")
+        red\auth(config.redis_password)
     if not ok
         print("Error connecting to redis: " .. err)
         @msg = "error connectiong: " .. err
         @status = 500
     else
+        if type(config.redis_password) == 'string' and #config.redis_password > 0
+            print("Authenticating...")
+            red\auth(config.redis_password)
         print('Connected to redis')
         return red
 

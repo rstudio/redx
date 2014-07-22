@@ -19,14 +19,21 @@ end
 M.connect = function(self)
   local redis = require("resty.redis")
   local red = redis:new()
-  red:set_timeout(20000)
-  red:set_keepalive(20000)
+  red:set_timeout(5000)
   local ok, err = red:connect(config.redis_host, config.redis_port)
+  if type(config.redis_password) == 'string' and #config.redis_password > 0 then
+    print("Authenticating...")
+    red:auth(config.redis_password)
+  end
   if not ok then
     print("Error connecting to redis: " .. err)
     self.msg = "error connectiong: " .. err
     self.status = 500
   else
+    if type(config.redis_password) == 'string' and #config.redis_password > 0 then
+      print("Authenticating...")
+      red:auth(config.redis_password)
+    end
     print('Connected to redis')
     return red
   end

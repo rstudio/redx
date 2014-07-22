@@ -34,6 +34,7 @@ M.commit = (@, red, error_msg) ->
 
 M.flush = (@) ->
     red = redis.connect(@)
+    return nil if red == nil
     ok, err = red\flushdb()
     if ok
         @status = 200
@@ -44,6 +45,7 @@ M.flush = (@) ->
  
 M.get_data = (@, asset_type, asset_name) ->
     red = redis.connect(@)
+    return nil if red == nil
     switch asset_type
         when 'frontends'
             @resp, @msg = red\get('frontend:' .. asset_name)
@@ -68,6 +70,7 @@ M.get_data = (@, asset_type, asset_name) ->
 
 M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
     red = redis.connect(@)
+    return nil if red == nil
     switch asset_type
         when 'frontends'
             ok, err = red\set('frontend:' .. asset_name, asset_value)
@@ -91,6 +94,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
 
 M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
     red = redis.connect(@)
+    return nil if red == nil
     switch asset_type
         when 'frontends'
             resp, @msg = red\del('frontend:' .. asset_name)
@@ -113,6 +117,7 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
 
 M.save_batch_data = (@, data, overwrite=false) ->
     red = redis.connect(@)
+    return nil if red == nil
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
@@ -133,6 +138,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
 
 M.delete_batch_data = (@, data) ->
     red = redis.connect(@)
+    return nil if red == nil
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
@@ -163,6 +169,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
                 p = p .. "/#{v}"
                 table.insert(keys, 1, @req.parsed_url['host'] .. p)
     red = redis.connect(@)
+    return nil if red == nil
     for key in *keys do
         print("Frontend:#{key}")
         resp, err = red\get('frontend:' .. key)
@@ -172,6 +179,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
 
 M.fetch_server = (@, backend_key) ->
     red = redis.connect(@)
+    return nil if red == nil
     resp, err = red\srandmember('backend:' .. backend_key)
     print('Failed getting backend: ' .. err) unless err == nil
     if type(resp) == 'string'

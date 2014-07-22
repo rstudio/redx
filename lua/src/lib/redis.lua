@@ -43,6 +43,9 @@ M.commit = function(self, red, error_msg)
 end
 M.flush = function(self)
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   local ok, err = red:flushdb()
   if ok then
     self.status = 200
@@ -54,6 +57,9 @@ M.flush = function(self)
 end
 M.get_data = function(self, asset_type, asset_name)
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   local _exp_0 = asset_type
   if 'frontends' == _exp_0 then
     self.resp, self.msg = red:get('frontend:' .. asset_name)
@@ -93,6 +99,9 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     overwrite = false
   end
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   local _exp_0 = asset_type
   if 'frontends' == _exp_0 then
     local ok, err = red:set('frontend:' .. asset_name, asset_value)
@@ -130,6 +139,9 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
     asset_value = nil
   end
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   local _exp_0 = asset_type
   if 'frontends' == _exp_0 then
     local resp
@@ -171,6 +183,9 @@ M.save_batch_data = function(self, data, overwrite)
     overwrite = false
   end
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   red:init_pipeline()
   if data['frontends'] then
     local _list_0 = data['frontends']
@@ -211,6 +226,9 @@ M.save_batch_data = function(self, data, overwrite)
 end
 M.delete_batch_data = function(self, data)
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   red:init_pipeline()
   if data['frontends'] then
     local _list_0 = data['frontends']
@@ -265,6 +283,9 @@ M.fetch_frontend = function(self, max_path_length)
     end
   end
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   for _index_0 = 1, #keys do
     local key = keys[_index_0]
     print("Frontend:" .. tostring(key))
@@ -280,6 +301,9 @@ M.fetch_frontend = function(self, max_path_length)
 end
 M.fetch_server = function(self, backend_key)
   local red = redis.connect(self)
+  if red == nil then
+    return nil
+  end
   local resp, err = red:srandmember('backend:' .. backend_key)
   if not (err == nil) then
     print('Failed getting backend: ' .. err)

@@ -13,7 +13,7 @@ process_request = function(self)
     if server == nil then
       return ngx.req.set_header("X-Redx-Backend-Cache-Hit", "false")
     else
-      ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
+      ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
       ngx.req.set_header("X-Redx-Backend-Server", server)
       print("SERVER: " .. server)
       ngx.var.upstream = server

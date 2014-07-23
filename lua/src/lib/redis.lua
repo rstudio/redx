@@ -1,5 +1,4 @@
 local M = { }
-inspect = require('inspect')
 local escape_pattern
 do
   local _obj_0 = require("lapis.util")
@@ -19,23 +18,30 @@ end
 M.connect = function(self)
   local redis = require("resty.redis")
   local red = redis:new()
-  red:set_timeout(5000)
+  red:set_timeout(config.redis_timeout)
   local ok, err = red:connect(config.redis_host, config.redis_port)
-  if type(config.redis_password) == 'string' and #config.redis_password > 0 then
-    print("Authenticating...")
-    red:auth(config.redis_password)
-  end
-  if not ok then
+  if not (ok) then
     print("Error connecting to redis: " .. err)
     self.msg = "error connectiong: " .. err
     self.status = 500
   else
     if type(config.redis_password) == 'string' and #config.redis_password > 0 then
-      print("Authenticating...")
       red:auth(config.redis_password)
     end
-    print('Connected to redis')
     return red
+  end
+end
+M.finish = function(red)
+  if config.redis_keepalive_pool_size == 0 then
+    print('closed')
+    local ok, err = red:close()
+  else
+    print('keepalive')
+    local ok, err = red:set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
+    if not (ok) then
+      print("failed to set keepalive: ", err)
+      return 
+    end
   end
 end
 M.commit = function(self, red, error_msg)
@@ -49,7 +55,7 @@ M.commit = function(self, red, error_msg)
   end
 end
 M.flush = function(self)
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -61,9 +67,10 @@ M.flush = function(self)
     self.status = 500
     self.msg = err
   end
+  return M.finish(red)
 end
 M.get_data = function(self, asset_type, asset_name)
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -100,12 +107,13 @@ M.get_data = function(self, asset_type, asset_name)
       self.msg = 'Unknown failutre'
     end
   end
+  return M.finish(red)
 end
 M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
   if overwrite == nil then
     overwrite = false
   end
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -113,7 +121,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
   if 'frontends' == _exp_0 then
     local ok, err = red:set('frontend:' .. asset_name, asset_value)
   elseif 'backends' == _exp_0 then
-    red = redis.connect(self)
+    red = M.connect(self)
     if overwrite then
       red:init_pipeline()
     end
@@ -122,7 +130,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     end
     local ok, err = red:sadd('backend:' .. asset_name, asset_value)
     if overwrite then
-      redis.commit(self, red, "Failed to save backend: ")
+      M.commit(self, red, "Failed to save backend: ")
     end
   else
     local ok = false
@@ -140,12 +148,13 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     end
     self.msg = "Failed to save backend: " .. err
   end
+  return M.finish(red)
 end
 M.delete_data = function(self, asset_type, asset_name, asset_value)
   if asset_value == nil then
     asset_value = nil
   end
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -184,12 +193,13 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
       self.msg = 'Unknown failutre'
     end
   end
+  return M.finish(red)
 end
 M.save_batch_data = function(self, data, overwrite)
   if overwrite == nil then
     overwrite = false
   end
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -229,10 +239,11 @@ M.save_batch_data = function(self, data, overwrite)
       end
     end
   end
-  return redis.commit(self, red, "failed to save data: ")
+  M.commit(self, red, "failed to save data: ")
+  return M.finish(red)
 end
 M.delete_batch_data = function(self, data)
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -269,7 +280,8 @@ M.delete_batch_data = function(self, data)
       end
     end
   end
-  return redis.commit(self, red, "failed to save data: ")
+  M.commit(self, red, "failed to save data: ")
+  return M.finish(red)
 end
 M.fetch_frontend = function(self, max_path_length)
   if max_path_length == nil then
@@ -289,13 +301,12 @@ M.fetch_frontend = function(self, max_path_length)
       end
     end
   end
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
   for _index_0 = 1, #keys do
     local key = keys[_index_0]
-    print("Frontend:" .. tostring(key))
     local resp, err = red:get('frontend:' .. key)
     if type(resp) == 'string' then
       return {
@@ -304,10 +315,11 @@ M.fetch_frontend = function(self, max_path_length)
       }
     end
   end
+  M.finish(red)
   return nil
 end
 M.fetch_server = function(self, backend_key)
-  local red = redis.connect(self)
+  local red = M.connect(self)
   if red == nil then
     return nil
   end
@@ -315,6 +327,7 @@ M.fetch_server = function(self, backend_key)
   if not (err == nil) then
     print('Failed getting backend: ' .. err)
   end
+  M.finish(red)
   if type(resp) == 'string' then
     return resp
   else

@@ -1,6 +1,5 @@
 M = {}
 
-export inspect = require('inspect')
 import escape_pattern from require "lapis.util"
 
 split = (str, delim using nil) ->
@@ -11,22 +10,27 @@ M.connect = (@) ->
     -- connect to redis
     redis = require "resty.redis"
     red = redis\new()
-    red\set_timeout(5000)
-     -- red\set_keepalive(5000, 100)
+    red\set_timeout(config.redis_timeout)
     ok, err = red\connect(config.redis_host, config.redis_port)
-    if type(config.redis_password) == 'string' and #config.redis_password > 0
-        print("Authenticating...")
-        red\auth(config.redis_password)
-    if not ok
+    unless ok
         print("Error connecting to redis: " .. err)
         @msg = "error connectiong: " .. err
         @status = 500
     else
         if type(config.redis_password) == 'string' and #config.redis_password > 0
-            print("Authenticating...")
             red\auth(config.redis_password)
-        print('Connected to redis')
         return red
+
+M.finish = (red) ->
+    if config.redis_keepalive_pool_size == 0
+        print('closed')
+        ok, err = red\close!
+    else
+        print('keepalive')
+        ok, err = red\set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
+        unless ok
+            print("failed to set keepalive: ", err)
+            return
 
 M.commit = (@, red, error_msg) ->
     -- commit the change
@@ -39,7 +43,7 @@ M.commit = (@, red, error_msg) ->
         @status = 200
 
 M.flush = (@) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     ok, err = red\flushdb()
     if ok
@@ -48,9 +52,10 @@ M.flush = (@) ->
     else
         @status = 500
         @msg = err
+    M.finish(red)
  
 M.get_data = (@, asset_type, asset_name) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     switch asset_type
         when 'frontends'
@@ -73,19 +78,20 @@ M.get_data = (@, asset_type, asset_name) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
+    M.finish(red)
 
 M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     switch asset_type
         when 'frontends'
             ok, err = red\set('frontend:' .. asset_name, asset_value)
         when 'backends'
-            red = redis.connect(@)
+            red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
             ok, err = red\sadd('backend:' .. asset_name, asset_value)
-            redis.commit(@, red, "Failed to save backend: ") if overwrite
+            M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
             @status = 400
@@ -97,9 +103,10 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
         @status = 500
         err = "unknown" if err == nil
         @msg = "Failed to save backend: " .. err
+    M.finish(red)
 
 M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     switch asset_type
         when 'frontends'
@@ -120,9 +127,10 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
+    M.finish(red)
 
 M.save_batch_data = (@, data, overwrite=false) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     red\init_pipeline()
     if data['frontends']
@@ -140,10 +148,11 @@ M.save_batch_data = (@, data, overwrite=false) ->
                 unless server == nil
                     print('adding backend: ' .. backend["name"] .. ' ' .. server)
                     red\sadd('backend:' .. backend["name"], server)
-    redis.commit(@, red, "failed to save data: ")
+    M.commit(@, red, "failed to save data: ")
+    M.finish(red)
 
 M.delete_batch_data = (@, data) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     red\init_pipeline()
     if data['frontends']
@@ -160,7 +169,8 @@ M.delete_batch_data = (@, data) ->
                     unless server == nil
                         print('deleting backend: ' .. backend["name"] .. ' ' .. server)
                         red\srem('backend:' .. backend["name"], server)
-    redis.commit(@, red, "failed to save data: ")
+    M.commit(@, red, "failed to save data: ")
+    M.finish(red)
 
 M.fetch_frontend = (@, max_path_length=3) ->
     path = @req.parsed_url['path']
@@ -174,20 +184,21 @@ M.fetch_frontend = (@, max_path_length=3) ->
                 count += 1
                 p = p .. "/#{v}"
                 table.insert(keys, 1, @req.parsed_url['host'] .. p)
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     for key in *keys do
-        print("Frontend:#{key}")
         resp, err = red\get('frontend:' .. key)
         if type(resp) == 'string'
             return { frontend_key: key, backend_key: resp }
+    M.finish(red)
     return nil
 
 M.fetch_server = (@, backend_key) ->
-    red = redis.connect(@)
+    red = M.connect(@)
     return nil if red == nil
     resp, err = red\srandmember('backend:' .. backend_key)
     print('Failed getting backend: ' .. err) unless err == nil
+    M.finish(red)
     if type(resp) == 'string'
         return resp
     else

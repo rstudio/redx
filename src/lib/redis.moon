@@ -23,10 +23,8 @@ M.connect = (@) ->
 
 M.finish = (red) ->
     if config.redis_keepalive_pool_size == 0
-        print('closed')
         ok, err = red\close!
     else
-        print('keepalive')
         ok, err = red\set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
         unless ok
             print("failed to set keepalive: ", err)

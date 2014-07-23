@@ -36,6 +36,36 @@ Testing
 
 Redx uses a testing framework, [busted](http://olivinelabs.com/busted/), to run integration tests. To run these tests, execute `busted lua/spec`. Continuous integration is setup with [travis ci](https://travis-ci.org/rstudio/redx).
 
+Configuration
+=============
+
+The configuration of redx is loaded from `lua/conf/config.lua`. This file consists of the following configuration options
+
+##### redis\_host
+An IP address or hostname to a redis server
+
+##### redis\_port
+An port number of the redis server to connect to
+
+##### redis\_password
+If you have a redis password, put it here. If you don't leave it an empty string (ie `''`)
+
+##### redis\_timeout
+This is the connection timeout for any redis connection, in milliseconds
+
+##### redis\_keepalive\_pool\_size
+The pool size of keepalive connections to maintain, per nginx worker.
+
+##### redis\_keepalive\_max\_idle\_timeout
+max idle timeout for keepalive connection, in milliseconds
+
+##### max\_path\_length
+The max number of path parts to look up. This defines the max length of a path to be to lookup the corresponding frontend in redis.
+
+Say in your service, your path always consists of an account name and service name ( ie http://sasservice.com/jdoe/app1). The user, may come into nginx with more to the path than that (ie http://sasservice.com/jdoe/app1/static/js/base.js), but when request comes in, redx will only search for "sasservice.com/jdoe/app1" first and "sasservice.com/jdoe" second as frontends in the database.
+
+Currently max_path_length must be a minimum of 1, but that will change in the future.
+
 API
 ===
 

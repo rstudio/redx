@@ -1,11 +1,5 @@
 M = {}
 
-import escape_pattern from require "lapis.util"
-
-split = (str, delim using nil) ->
-  str ..= delim
-  [part for part in str\gmatch "(.-)" .. escape_pattern delim]
-
 M.connect = (@) ->
     -- connect to redis
     redis = require "resty.redis"
@@ -13,11 +7,13 @@ M.connect = (@) ->
     red\set_timeout(config.redis_timeout)
     ok, err = red\connect(config.redis_host, config.redis_port)
     unless ok
-        print("Error connecting to redis: " .. err)
+        library\log_err("Error connecting to redis: " .. err)
         @msg = "error connectiong: " .. err
         @status = 500
     else
+        library.log("Connected to redis")
         if type(config.redis_password) == 'string' and #config.redis_password > 0
+            library.log("Authenticated with redis")
             red\auth(config.redis_password)
         return red
 
@@ -27,7 +23,7 @@ M.finish = (red) ->
     else
         ok, err = red\set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
         unless ok
-            print("failed to set keepalive: ", err)
+            library.log_err("failed to set keepalive: ", err)
             return
 
 M.test = (@) ->
@@ -57,6 +53,7 @@ M.commit = (@, red, error_msg) ->
     -- commit the change
     results, err = red\commit_pipeline()
     if not results
+        library.log_err(error_msg .. err)
         @msg = error_msg .. err
         @status = 500
     else
@@ -73,6 +70,7 @@ M.flush = (@) ->
     else
         @status = 500
         @msg = err
+        library.log_err(err)
     M.finish(red)
  
 M.get_data = (@, asset_type, asset_name) ->
@@ -99,6 +97,7 @@ M.get_data = (@, asset_type, asset_name) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
+        library.log(@msg)
     M.finish(red)
 
 M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
@@ -124,6 +123,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
         @status = 500
         err = "unknown" if err == nil
         @msg = "Failed to save backend: " .. err
+        library.log_err(@msg)
     M.finish(red)
 
 M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
@@ -148,6 +148,7 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
     else
         @status = 500 unless @status
         @msg = 'Unknown failutre' unless @msg
+        library.log_err(@msg)
     M.finish(red)
 
 M.save_batch_data = (@, data, overwrite=false) ->
@@ -158,7 +159,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
         for frontend in *data['frontends'] do
             red\del('frontend:' .. frontend['url']) if overwrite
             unless frontend['backend_name'] == nil
-                print('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
+                library.log('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
                 red\set('frontend:' .. frontend['url'], frontend['backend_name'])
     if data["backends"]
         for backend in *data['backends'] do
@@ -167,7 +168,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
             backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
             for server in *backend['servers']
                 unless server == nil
-                    print('adding backend: ' .. backend["name"] .. ' ' .. server)
+                    library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
                     red\sadd('backend:' .. backend["name"], server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
@@ -178,7 +179,7 @@ M.delete_batch_data = (@, data) ->
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
-            print('deleting frontend: ' .. frontend['url'])
+            library.log('deleting frontend: ' .. frontend['url'])
             red\del('frontend:' .. frontend['url'])
     if data["backends"]
         for backend in *data['backends'] do
@@ -188,14 +189,14 @@ M.delete_batch_data = (@, data) ->
                 backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
                 for server in *backend['servers']
                     unless server == nil
-                        print('deleting backend: ' .. backend["name"] .. ' ' .. server)
+                        library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
                         red\srem('backend:' .. backend["name"], server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
 M.fetch_frontend = (@, max_path_length=3) ->
     path = @req.parsed_url['path']
-    path_parts = split path, '/'
+    path_parts = library.split path, '/'
     keys = {}
     p = ''
     count = 0
@@ -212,17 +213,19 @@ M.fetch_frontend = (@, max_path_length=3) ->
         if type(resp) == 'string'
             return { frontend_key: key, backend_key: resp }
     M.finish(red)
+    library.log_err("Frontend Cache miss: " .. key)
     return nil
 
 M.fetch_server = (@, backend_key) ->
     red = M.connect(@)
     return nil if red == nil
     resp, err = red\srandmember('backend:' .. backend_key)
-    print('Failed getting backend: ' .. err) unless err == nil
+    library.log('Failed getting backend: ' .. err) unless err == nil
     M.finish(red)
     if type(resp) == 'string'
         return resp
     else
+        library.log_err("Backend Cache miss: " .. backend_key)
         return nil
 
 return M

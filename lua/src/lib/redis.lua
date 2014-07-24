@@ -1,31 +1,17 @@
 local M = { }
-local escape_pattern
-do
-  local _obj_0 = require("lapis.util")
-  escape_pattern = _obj_0.escape_pattern
-end
-local split
-split = function(str, delim)
-  str = str .. delim
-  local _accum_0 = { }
-  local _len_0 = 1
-  for part in str:gmatch("(.-)" .. escape_pattern(delim)) do
-    _accum_0[_len_0] = part
-    _len_0 = _len_0 + 1
-  end
-  return _accum_0
-end
 M.connect = function(self)
   local redis = require("resty.redis")
   local red = redis:new()
   red:set_timeout(config.redis_timeout)
   local ok, err = red:connect(config.redis_host, config.redis_port)
   if not (ok) then
-    print("Error connecting to redis: " .. err)
+    library:log_err("Error connecting to redis: " .. err)
     self.msg = "error connectiong: " .. err
     self.status = 500
   else
+    library.log("Connected to redis")
     if type(config.redis_password) == 'string' and #config.redis_password > 0 then
+      library.log("Authenticated with redis")
       red:auth(config.redis_password)
     end
     return red
@@ -37,7 +23,7 @@ M.finish = function(red)
   else
     local ok, err = red:set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
     if not (ok) then
-      print("failed to set keepalive: ", err)
+      library.log_err("failed to set keepalive: ", err)
       return 
     end
   end
@@ -72,6 +58,7 @@ end
 M.commit = function(self, red, error_msg)
   local results, err = red:commit_pipeline()
   if not results then
+    library.log_err(error_msg .. err)
     self.msg = error_msg .. err
     self.status = 500
   else
@@ -91,6 +78,7 @@ M.flush = function(self)
   else
     self.status = 500
     self.msg = err
+    library.log_err(err)
   end
   return M.finish(red)
 end
@@ -131,6 +119,7 @@ M.get_data = function(self, asset_type, asset_name)
     if not (self.msg) then
       self.msg = 'Unknown failutre'
     end
+    library.log(self.msg)
   end
   return M.finish(red)
 end
@@ -172,6 +161,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
       err = "unknown"
     end
     self.msg = "Failed to save backend: " .. err
+    library.log_err(self.msg)
   end
   return M.finish(red)
 end
@@ -217,6 +207,7 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
     if not (self.msg) then
       self.msg = 'Unknown failutre'
     end
+    library.log_err(self.msg)
   end
   return M.finish(red)
 end
@@ -237,7 +228,7 @@ M.save_batch_data = function(self, data, overwrite)
         red:del('frontend:' .. frontend['url'])
       end
       if not (frontend['backend_name'] == nil) then
-        print('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
+        library.log('adding frontend: ' .. frontend['url'] .. ' ' .. frontend['backend_name'])
         red:set('frontend:' .. frontend['url'], frontend['backend_name'])
       end
     end
@@ -258,7 +249,7 @@ M.save_batch_data = function(self, data, overwrite)
       for _index_1 = 1, #_list_1 do
         local server = _list_1[_index_1]
         if not (server == nil) then
-          print('adding backend: ' .. backend["name"] .. ' ' .. server)
+          library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
           red:sadd('backend:' .. backend["name"], server)
         end
       end
@@ -277,7 +268,7 @@ M.delete_batch_data = function(self, data)
     local _list_0 = data['frontends']
     for _index_0 = 1, #_list_0 do
       local frontend = _list_0[_index_0]
-      print('deleting frontend: ' .. frontend['url'])
+      library.log('deleting frontend: ' .. frontend['url'])
       red:del('frontend:' .. frontend['url'])
     end
   end
@@ -298,7 +289,7 @@ M.delete_batch_data = function(self, data)
         for _index_1 = 1, #_list_1 do
           local server = _list_1[_index_1]
           if not (server == nil) then
-            print('deleting backend: ' .. backend["name"] .. ' ' .. server)
+            library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
             red:srem('backend:' .. backend["name"], server)
           end
         end
@@ -313,7 +304,7 @@ M.fetch_frontend = function(self, max_path_length)
     max_path_length = 3
   end
   local path = self.req.parsed_url['path']
-  local path_parts = split(path, '/')
+  local path_parts = library.split(path, '/')
   local keys = { }
   local p = ''
   local count = 0
@@ -341,6 +332,7 @@ M.fetch_frontend = function(self, max_path_length)
     end
   end
   M.finish(red)
+  library.log_err("Frontend Cache miss: " .. key)
   return nil
 end
 M.fetch_server = function(self, backend_key)
@@ -350,12 +342,13 @@ M.fetch_server = function(self, backend_key)
   end
   local resp, err = red:srandmember('backend:' .. backend_key)
   if not (err == nil) then
-    print('Failed getting backend: ' .. err)
+    library.log('Failed getting backend: ' .. err)
   end
   M.finish(red)
   if type(resp) == 'string' then
     return resp
   else
+    library.log_err("Backend Cache miss: " .. backend_key)
     return nil
   end
 end

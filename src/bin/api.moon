@@ -1,5 +1,3 @@
-export inspect = require('inspect')
-
 lapis = require "lapis"
 import respond_to from require "lapis.application"
 import from_json, unescape from require "lapis.util"
@@ -30,6 +28,7 @@ webserver = class extends lapis.Application
             unless @body
                 @status = 400
                 @msg = "Missing json body"
+                library.log_err("Missing json body")
         POST: =>
             redis.save_batch_data(@, @body, false) if @body
             status: @status, json: json_response(@)

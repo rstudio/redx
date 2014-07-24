@@ -1,4 +1,3 @@
-inspect = require('inspect')
 local lapis = require("lapis")
 local respond_to
 do
@@ -51,6 +50,7 @@ do
         if not (self.body) then
           self.status = 400
           self.msg = "Missing json body"
+          return library.log_err("Missing json body")
         end
       end,
       POST = function(self)

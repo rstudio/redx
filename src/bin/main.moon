@@ -1,5 +1,3 @@
-export redis = require 'redis'
-
 lapis = require "lapis"
 
 process_request = (@) ->
@@ -16,7 +14,7 @@ process_request = (@) ->
         else
             ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
             ngx.req.set_header("X-Redx-Backend-Server", server)
-            print("SERVER: " .. server)
+            library.log("SERVER: " .. server)
             ngx.var.upstream = server
 
 webserver = class extends lapis.Application

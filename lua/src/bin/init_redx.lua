@@ -1,3 +1,5 @@
 redis = require('redis')
 config = require('config')
-return print('Redis host: ' .. config.redis_host .. ':' .. config.redis_port)
+library = require('library')
+inspect = require('inspect')
+return library.log('Redis host: ' .. config.redis_host .. ':' .. config.redis_port)

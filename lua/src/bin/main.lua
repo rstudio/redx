@@ -1,4 +1,3 @@
-redis = require('redis')
 local lapis = require("lapis")
 local process_request
 process_request = function(self)
@@ -15,7 +14,7 @@ process_request = function(self)
     else
       ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
       ngx.req.set_header("X-Redx-Backend-Server", server)
-      print("SERVER: " .. server)
+      library.log("SERVER: " .. server)
       ngx.var.upstream = server
     end
   end

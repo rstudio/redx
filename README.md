@@ -1,10 +1,15 @@
 [![Build Status](https://travis-ci.org/rstudio/redx.svg)](https://travis-ci.org/rstudio/redx)
-redx (experimental)
+redx
 ======
 
 Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as the data store. Its inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends. 
 
 One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments that are nearly constantly changing their large nginx config due to cases such as elastic backends or new user signups. Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have high availability and scalability on your load balancing layer. 
+
+Project Status
+==============
+
+Redx is new, but at [rstudio](http://www.rstudio.com/), we are using it in production serving all web traffic for [shinyapps](https://www.shinyapps.io/).
 
 How it works
 ============
@@ -16,6 +21,17 @@ The other component is main, and this is what takes regular traffic from your us
 
 ## The fallback
 In the event that there isn't a frontend or backend match for an incoming request **OR** the backend server the request was proxied to isn't responding, the request is sent to the `fallback`. This is typically your application server, which handles these failure scenario. Several headers are added to the request to help your application server understand the context in which the request is coming in. In some cases, you may want to update redx by hitting the API and insert the missing frontend and/or backend and sent them back to nginx, or maybe you want to forward them to a custom 404 page. Its up to you to decide what the behavior you want it to be.
+
+Performance
+===========
+
+At [rstudio](http://www.rstudio.com/), we find that redx performs slightly slower than regular redis config files. Of course, this makes sense, as you're now querying a remote redis server to lookup frontends and backends, instead of caching all that in local memory. In our unofficial benchmarks, we see a 10ms increase in response time. That being said, the payoff of having dynamic configuration and being able to easily do high availability with active active nginx load balancer is well worth the 10ms cost. Each environment is different and has different requirements, goals, etc. So its up to you to decide what is worth what.
+
+Requirements
+============
+
+[openresty](http://openresty.org/) 1.7.2 or greater
+A [redis](http://redis.io/) server
 
 Setup Dev Environment
 =====================

@@ -228,3 +228,6 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555")
         assert.same 404, code
 
+    it "should test healthcheck", ->
+        response, code, headers = make_json_request("/health")
+        assert.same 200, code

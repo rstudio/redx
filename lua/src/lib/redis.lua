@@ -31,12 +31,13 @@ end
 M.test = function(self)
   local red = M.connect(self)
   local rand_value = tostring(math.random())
-  local ok, err = red:set('healthcheck', rand_value)
+  local key = "healthcheck:" .. rand_value
+  local ok, err = red:set(key, rand_value)
   if not (ok) then
     self.status = 500
     self.msg = "Failed to write to redis"
   end
-  ok, err = red:get('healthcheck')
+  ok, err = red:get(key)
   if not (ok) then
     self.status = 500
     self.msg = "Failed to read redis"
@@ -45,7 +46,7 @@ M.test = function(self)
     self.status = 500
     self.msg = "Healthcheck failed to write and read from redis"
   end
-  ok, err = red:del('healthcheck')
+  ok, err = red:del(key)
   if ok then
     self.status = 200
     self.msg = "OK"

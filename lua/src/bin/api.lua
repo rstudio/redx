@@ -25,6 +25,15 @@ local webserver
 do
   local _parent_0 = lapis.Application
   local _base_0 = {
+    ['/health'] = respond_to({
+      GET = function(self)
+        redis.test(self)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
     ['/flush'] = respond_to({
       DELETE = function(self)
         redis.flush(self)

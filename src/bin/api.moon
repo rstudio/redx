@@ -11,6 +11,12 @@ json_response = (@) ->
     return json
 
 webserver = class extends lapis.Application
+    '/health': respond_to {
+        GET: =>
+            redis.test(@)
+            status: @status, json: json_response(@)
+    }
+
     '/flush': respond_to {
         DELETE: =>
             redis.flush(@)

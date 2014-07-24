@@ -33,16 +33,41 @@ M.connect = function(self)
 end
 M.finish = function(red)
   if config.redis_keepalive_pool_size == 0 then
-    print('closed')
     local ok, err = red:close()
   else
-    print('keepalive')
     local ok, err = red:set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
     if not (ok) then
       print("failed to set keepalive: ", err)
       return 
     end
   end
+end
+M.test = function(self)
+  local red = M.connect(self)
+  local rand_value = tostring(math.random())
+  local ok, err = red:set('healthcheck', rand_value)
+  if not (ok) then
+    self.status = 500
+    self.msg = "Failed to write to redis"
+  end
+  ok, err = red:get('healthcheck')
+  if not (ok) then
+    self.status = 500
+    self.msg = "Failed to read redis"
+  end
+  if not (ok == rand_value) then
+    self.status = 500
+    self.msg = "Healthcheck failed to write and read from redis"
+  end
+  ok, err = red:del('healthcheck')
+  if ok then
+    self.status = 200
+    self.msg = "OK"
+  else
+    self.status = 500
+    self.msg = "Failed to delete key from redis"
+  end
+  return M.finish(red)
 end
 M.commit = function(self, red, error_msg)
   local results, err = red:commit_pipeline()

@@ -30,6 +30,29 @@ M.finish = (red) ->
             print("failed to set keepalive: ", err)
             return
 
+M.test = (@) ->
+    red = M.connect(@)
+    rand_value = tostring(math.random!)
+    ok , err = red\set('healthcheck', rand_value)
+    unless ok
+        @status = 500
+        @msg = "Failed to write to redis"
+    ok, err = red\get('healthcheck')
+    unless ok
+        @status = 500
+        @msg = "Failed to read redis"
+    unless ok == rand_value
+        @status = 500
+        @msg = "Healthcheck failed to write and read from redis"
+    ok, err = red\del('healthcheck')
+    if ok
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500
+        @msg = "Failed to delete key from redis"
+    M.finish(red)
+
 M.commit = (@, red, error_msg) ->
     -- commit the change
     results, err = red\commit_pipeline()

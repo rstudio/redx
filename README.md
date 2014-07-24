@@ -212,3 +212,11 @@ curl -X DELETE localhost:8081/batch -d '{
     ]
 }'
 ```
+
+### (GET) /health
+This endpoint is designed to be used to check the health of redx. When you hit this endpoint, redx with attempt to write, read, and delete a key in redis to confirm that its capable of accessing redis. Getting a `200` response code from this endpoint should mean that the redx service is healthy.
+
+##### `GET` example
+```
+curl localhost:8081/health
+```

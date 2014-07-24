@@ -213,7 +213,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
         if type(resp) == 'string'
             return { frontend_key: key, backend_key: resp }
     M.finish(red)
-    library.log_err("Frontend Cache miss: " .. key)
+    library.log_err("Frontend Cache miss")
     return nil
 
 M.fetch_server = (@, backend_key) ->

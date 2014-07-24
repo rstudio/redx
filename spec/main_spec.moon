@@ -78,7 +78,7 @@ describe "redx_main", ->
         response, code, headers = make_request("/contact")
         assert.are_not.equals 404, code
 
-    it "make regular invalid request", ->
+    it "make regular invalid request #invalid_uri", ->
         response, code, headers = make_request("/bad_url")
         assert.same 502, code
 

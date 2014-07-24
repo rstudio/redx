@@ -332,7 +332,7 @@ M.fetch_frontend = function(self, max_path_length)
     end
   end
   M.finish(red)
-  library.log_err("Frontend Cache miss: " .. key)
+  library.log_err("Frontend Cache miss")
   return nil
 end
 M.fetch_server = function(self, backend_key)

@@ -1,7 +1,7 @@
 local lapis = require("lapis")
 local process_request
 process_request = function(self)
-  local frontend = redis.fetch_frontend(self, 3)
+  local frontend = redis.fetch_frontend(self, config.max_path_length)
   if frontend == nil then
     return ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "false")
   else

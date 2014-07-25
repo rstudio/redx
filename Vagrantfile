@@ -22,6 +22,7 @@ Vagrant.configure("2") do |config|
       "redx" => {
         "dir" => "/home/vagrant/redx",
         "nginx" => {
+          "resolver" => "8.8.8.8",
           "api_ports" => [8081],
           "main_ports" => [8080]
         }

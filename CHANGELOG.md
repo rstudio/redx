@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## 1.1.0 (2014-07-27)
+
+### Feature
++ [PR](https://github.com/rstudio/redx/pull/1): Add new api endpoint, `/orphans`, that returns or deletes all frontends and backends that are orphaned.
+
 ## 1.1 (2014-07-27)
 
 ### Bug Fixes

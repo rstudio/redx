@@ -257,8 +257,56 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/5555")
     return assert.same(404, code)
   end)
-  return it("should test healthcheck", function()
+  it("should test healthcheck", function()
     local response, code, headers = make_json_request("/health")
     return assert.same(200, code)
+  end)
+  it("should get orphans #orphans_api", function()
+    local response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/frontends/" .. tostring(escape('foobar.com/path')) .. "/foobar", "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/orphans", "GET")
+    assert.same(200, code)
+    return assert.same(response['data'], {
+      backends = {
+        {
+          name = '5555'
+        }
+      },
+      frontends = {
+        {
+          url = 'foobar.com/path'
+        }
+      }
+    })
+  end)
+  return it("should delete orphans #orphans_api", function()
+    local response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/frontends/" .. tostring(escape('foobar.com/path')) .. "/foobar", "POST")
+    assert.same(200, code)
+    response, code, headers = make_json_request("/orphans", "DELETE")
+    assert.same(200, code)
+    assert.same(response['data'], {
+      backends = {
+        {
+          name = '5555'
+        }
+      },
+      frontends = {
+        {
+          url = 'foobar.com/path'
+        }
+      }
+    })
+    response, code, headers = make_json_request("/backends/5555", "GET")
+    assert.same(404, code)
+    response, code, headers = make_json_request("/frontends/" .. tostring(escape('foobar.com/path')), "GET")
+    return assert.same(404, code)
   end)
 end)

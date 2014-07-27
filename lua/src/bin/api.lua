@@ -42,6 +42,23 @@ do
         }
       end
     }),
+    ['/orphans'] = respond_to({
+      GET = function(self)
+        redis.orphans(self)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end,
+      DELETE = function(self)
+        local orphans = redis.orphans(self)
+        redis.delete_batch_data(self, orphans)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
     ['/batch'] = respond_to({
       before = function(self)
         for k, v in pairs(self.req.params_post) do

@@ -237,3 +237,16 @@ This endpoint is designed to be used to check the health of redx. When you hit t
 ```
 curl localhost:8081/health
 ```
+
+### (GET|DELETE) /orphans
+Will return or delete any frontends and backends that are orphans. Meaning a list of any frontends that point to a missing backend, or any backends that don't have a frontend pointing to it.
+
+##### `GET` example
+```
+curl localhost:8081/orphans
+```
+
+##### `DELETE` example
+```
+curl -X DELETE localhost:8081/orphans
+```

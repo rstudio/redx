@@ -21,6 +21,16 @@ webserver = class extends lapis.Application
             status: @status, json: json_response(@)
     }
 
+    '/orphans': respond_to {
+        GET: =>
+            redis.orphans(@)
+            status: @status, json: json_response(@)
+        DELETE: =>
+            orphans = redis.orphans(@)
+            redis.delete_batch_data(@, orphans)
+            status: @status, json: json_response(@)
+    }
+
     '/batch': respond_to {
         before: =>
             for k,v in pairs @req.params_post do

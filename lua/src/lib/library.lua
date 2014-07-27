@@ -20,4 +20,11 @@ M.split = function(str, delim)
   end
   return _accum_0
 end
+M.Set = function(list)
+  local set = { }
+  for _, l in ipairs(list) do
+    set[l] = true
+  end
+  return set
+end
 return M

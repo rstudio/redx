@@ -354,4 +354,52 @@ M.fetch_server = function(self, backend_key)
     return nil
   end
 end
+M.orphans = function(self)
+  local red = M.connect(self)
+  if red == nil then
+    return nil
+  end
+  local orphans = {
+    frontends = { },
+    backends = { }
+  }
+  local frontends, err = red:keys('frontend:*')
+  local backends
+  backends, err = red:keys('backend:*')
+  local used_backends = { }
+  for _index_0 = 1, #frontends do
+    local frontend = frontends[_index_0]
+    local backend_name
+    backend_name, err = red:get(frontend)
+    local frontend_url = library.split(frontend, 'frontend:')[2]
+    if type(backend_name) == 'string' then
+      local resp
+      resp, err = red:exists('backend:' .. backend_name)
+      if resp == 0 then
+        table.insert(orphans['frontends'], {
+          url = frontend_url
+        })
+      else
+        table.insert(used_backends, backend_name)
+      end
+    else
+      table.insert(orphans['frontends'], {
+        url = frontend_url
+      })
+    end
+  end
+  used_backends = library.Set(used_backends)
+  for _index_0 = 1, #backends do
+    local backend = backends[_index_0]
+    local backend_name = library.split(backend, 'backend:')[2]
+    if not (used_backends[backend_name]) then
+      table.insert(orphans['backends'], {
+        name = backend_name
+      })
+    end
+  end
+  self.resp = orphans
+  self.status = 200
+  return orphans
+end
 return M

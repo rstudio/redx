@@ -230,4 +230,30 @@ M.fetch_server = (@, backend_key) ->
         library.log_err("Backend Cache miss: " .. backend_key)
         return nil
 
+M.orphans = (@) ->
+    red = M.connect(@)
+    return nil if red == nil
+    orphans = { frontends: {}, backends: {} }
+    frontends, err = red\keys('frontend:*')
+    backends, err = red\keys('backend:*')
+    used_backends = {}
+    for frontend in *frontends do
+        backend_name, err = red\get(frontend)
+        frontend_url = library.split(frontend, 'frontend:')[2]
+        if type(backend_name) == 'string'
+            resp, err = red\exists('backend:' .. backend_name)
+            if resp == 0
+                table.insert(orphans['frontends'], { url: frontend_url })
+            else
+                table.insert(used_backends, backend_name)
+        else
+            table.insert(orphans['frontends'], { url: frontend_url })
+    used_backends = library.Set(used_backends)
+    for backend in *backends do
+        backend_name = library.split(backend, 'backend:')[2]
+        unless used_backends[backend_name]
+            table.insert(orphans['backends'], { name: backend_name })
+    @resp = orphans
+    @status = 200
+    return orphans
 return M

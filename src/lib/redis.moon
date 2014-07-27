@@ -212,6 +212,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
     for key in *keys do
         resp, err = red\get('frontend:' .. key)
         if type(resp) == 'string'
+            M.finish(red)
             return { frontend_key: key, backend_key: resp }
     M.finish(red)
     library.log_err("Frontend Cache miss")

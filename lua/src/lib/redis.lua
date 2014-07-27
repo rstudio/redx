@@ -326,6 +326,7 @@ M.fetch_frontend = function(self, max_path_length)
     local key = keys[_index_0]
     local resp, err = red:get('frontend:' .. key)
     if type(resp) == 'string' then
+      M.finish(red)
       return {
         frontend_key = key,
         backend_key = resp

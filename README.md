@@ -83,6 +83,9 @@ Say in your service, your path always consists of an account name and service na
 
 Currently max_path_length must be a minimum of 1, but that will change in the future.
 
+##### stickiness
+The amount of time (in seconds) you wish the session to be "sticky", and consistently use the same upstream server. If you wish to disable "stickiness", set value to 0 (zero).
+
 API
 ===
 

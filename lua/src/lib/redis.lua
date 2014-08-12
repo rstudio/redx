@@ -338,17 +338,36 @@ M.fetch_frontend = function(self, max_path_length)
   return nil
 end
 M.fetch_server = function(self, backend_key)
+  if config.stickiness > 0 then
+    backend_cookie = self.session.backend
+  end
+  upstream = nil
   local red = M.connect(self)
   if red == nil then
     return nil
   end
-  local resp, err = red:srandmember('backend:' .. backend_key)
-  if not (err == nil) then
-    library.log('Failed getting backend: ' .. err)
+  if config.stickiness > 0 and backend_cookie ~= nil and backend_cookie ~= '' then
+    local resp, err = red:sismember('backend:' .. backend_key, backend_cookie)
+    if resp == 1 then
+      upstream = backend_cookie
+    else
+      self.session.backend = nil
+      upstream = nil
+    end
+  end
+  if upstream == nil then
+    local err
+    upstream, err = red:srandmember('backend:' .. backend_key)
+    if not (err == nil) then
+      library.log('Failed getting backend: ' .. err)
+    end
   end
   M.finish(red)
-  if type(resp) == 'string' then
-    return resp
+  if type(upstream) == 'string' then
+    if config.stickiness > 0 then
+      self.session.backend = upstream
+    end
+    return upstream
   else
     library.log_err("Backend Cache miss: " .. backend_key)
     return nil

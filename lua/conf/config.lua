@@ -6,4 +6,5 @@ M.redis_timeout = 5000
 M.redis_keepalive_pool_size = 0
 M.redis_keepalive_max_idle_timeout = 10000
 M.max_path_length = 1
+M.stickiness = 900
 return M

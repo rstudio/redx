@@ -25,4 +25,8 @@ M.redis_keepalive_max_idle_timeout = 10000
 -- 3 = host.com/contact/us/now
 M.max_path_length = 1
 
+-- Stickiness
+-- Amount of time (in seconds) you wish the session to be sticky
+-- Set to 0 if you want to disable stickiness
+M.stickiness = 900
 return M

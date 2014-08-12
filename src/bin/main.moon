@@ -1,5 +1,15 @@
 lapis = require "lapis"
 
+lapis_config = require "lapis.config"
+
+lapis_config.config "production", ->
+  session_name "redx_session"
+  secret config.cookie_secret
+
+lapis_config.config "development", ->
+  session_name "redx_session"
+  secret config.cookie_secret
+
 process_request = (@) ->
     frontend = redis.fetch_frontend(@, config.max_path_length)
     if frontend == nil
@@ -18,8 +28,34 @@ process_request = (@) ->
             ngx.var.upstream = server
 
 webserver = class extends lapis.Application
+    cookie_attributes: (name, value) =>
+        path = @req.parsed_url['path']
+        path_parts = library.split path, '/'
+        p = ''
+        count = 0
+        for k,v in pairs path_parts do
+            unless v == nil or v == ''
+                if count < (config.max_path_length)
+                    count += 1
+                    p = p .. "/#{v}"
+        if p == ''
+            p = '/'
+        "Max-Age=#{config.stickiness}; Path=#{p}; HttpOnly"
+
     '/': =>
         process_request(@)
+        layout: false
+
+    '/set-cookie': =>
+        library.log("setting cookie")
+        @cookies.foo = "bar"
+        layout: false
+
+    '/get-cookie': =>
+        library.log("getting cookie")
+        @cookies.foo
+        for k,v in pairs getmetatable(@cookies).__index
+            print k,v
         layout: false
 
     default_route: =>

@@ -219,13 +219,28 @@ M.fetch_frontend = (@, max_path_length=3) ->
     return nil
 
 M.fetch_server = (@, backend_key) ->
+    if config.stickiness > 0
+        export backend_cookie = @session.backend
+    export upstream = nil
     red = M.connect(@)
     return nil if red == nil
-    resp, err = red\srandmember('backend:' .. backend_key)
-    library.log('Failed getting backend: ' .. err) unless err == nil
+    if config.stickiness > 0 and backend_cookie != nil and backend_cookie != ''
+        resp, err = red\sismember('backend:' .. backend_key, backend_cookie)
+        if resp == 1
+            export upstream = backend_cookie
+        else
+            -- clear cookie by setting to nil
+            @session.backend = nil
+            export upstream = nil
+    if upstream == nil
+        upstream, err = red\srandmember('backend:' .. backend_key)
+        library.log('Failed getting backend: ' .. err) unless err == nil
     M.finish(red)
-    if type(resp) == 'string'
-        return resp
+    if type(upstream) == 'string'
+        if config.stickiness > 0
+            -- update cookie
+            @session.backend = upstream
+        return upstream
     else
         library.log_err("Backend Cache miss: " .. backend_key)
         return nil

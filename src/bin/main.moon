@@ -46,18 +46,6 @@ webserver = class extends lapis.Application
         process_request(@)
         layout: false
 
-    '/set-cookie': =>
-        library.log("setting cookie")
-        @cookies.foo = "bar"
-        layout: false
-
-    '/get-cookie': =>
-        library.log("getting cookie")
-        @cookies.foo
-        for k,v in pairs getmetatable(@cookies).__index
-            print k,v
-        layout: false
-
     default_route: =>
         process_request(@)
         layout: false

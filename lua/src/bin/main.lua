@@ -8,6 +8,8 @@ lapis_config.config("development", function()
   session_name("redx_session")
   return secret(config.cookie_secret)
 end)
+ngx.req.read_body()
+local request_body = ngx.req.get_body_data()
 local process_request
 process_request = function(self)
   local frontend = redis.fetch_frontend(self, config.max_path_length)
@@ -24,6 +26,7 @@ process_request = function(self)
       ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
       ngx.req.set_header("X-Redx-Backend-Server", server)
       library.log("SERVER: " .. server)
+      ngx.req.set_body_data = request_body
       ngx.var.upstream = server
     end
   end
@@ -52,23 +55,6 @@ do
     end,
     ['/'] = function(self)
       process_request(self)
-      return {
-        layout = false
-      }
-    end,
-    ['/set-cookie'] = function(self)
-      library.log("setting cookie")
-      self.cookies.foo = "bar"
-      return {
-        layout = false
-      }
-    end,
-    ['/get-cookie'] = function(self)
-      library.log("getting cookie")
-      local _ = self.cookies.foo
-      for k, v in pairs(getmetatable(self.cookies).__index) do
-        print(k, v)
-      end
       return {
         layout = false
       }

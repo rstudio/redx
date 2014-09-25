@@ -10,6 +10,11 @@ lapis_config.config "development", ->
   session_name "redx_session"
   secret config.cookie_secret
 
+-- get request body, so we can make sure it gets forwarded to the upstream and lapis doesn't swallow it up
+-- https://github.com/leafo/lapis/issues/161
+ngx.req.read_body!
+request_body = ngx.req.get_body_data!
+
 process_request = (@) ->
     frontend = redis.fetch_frontend(@, config.max_path_length)
     if frontend == nil
@@ -25,6 +30,7 @@ process_request = (@) ->
             ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
             ngx.req.set_header("X-Redx-Backend-Server", server)
             library.log("SERVER: " .. server)
+            ngx.req.set_body_data = request_body
             ngx.var.upstream = server
 
 webserver = class extends lapis.Application

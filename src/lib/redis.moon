@@ -84,7 +84,12 @@ M.get_data = (@, asset_type, asset_name) ->
             if getmetatable(@resp) == nil
                 @resp = nil
         when 'backends'
-            @resp, @msg = red\smembers('backend:' .. asset_name)
+            rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+            data = {}
+            @resp = {}
+            data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
+            @resp = [ k for k,v in pairs data when k\sub(1,1) != "_"]
+            library.log_err(inspect(data))
             @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
             @status = 400
@@ -111,7 +116,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\sadd('backend:' .. asset_name, asset_value)
+            ok, err = red\zadd('backend:' .. asset_name, 0, asset_value)
             M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
@@ -138,7 +143,7 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
             if asset_value == nil
                 resp, @msg = red\del('backend:' .. asset_name)
             else
-                resp, @msg = red\srem('backend:' .. asset_name, asset_value)
+                resp, @msg = red\zrem('backend:' .. asset_name, asset_value)
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'
@@ -170,7 +175,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
             for server in *backend['servers']
                 unless server == nil
                     library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-                    red\sadd('backend:' .. backend["name"], server)
+                    red\zadd('backend:' .. backend["name"], 0, server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -191,7 +196,7 @@ M.delete_batch_data = (@, data) ->
                 for server in *backend['servers']
                     unless server == nil
                         library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-                        red\srem('backend:' .. backend["name"], server)
+                        red\zrem('backend:' .. backend["name"], server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 

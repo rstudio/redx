@@ -98,7 +98,31 @@ M.get_data = function(self, asset_type, asset_name)
       self.resp = nil
     end
   elseif 'backends' == _exp_0 then
-    self.resp, self.msg = red:smembers('backend:' .. asset_name)
+    local rawdata
+    rawdata, self.msg = red:zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+    local data = { }
+    self.resp = { }
+    do
+      local _tbl_0 = { }
+      for i, item in ipairs(rawdata) do
+        if i % 2 > 0 then
+          _tbl_0[item] = rawdata[i + 1]
+        end
+      end
+      data = _tbl_0
+    end
+    do
+      local _accum_0 = { }
+      local _len_0 = 1
+      for k, v in pairs(data) do
+        if k:sub(1, 1) ~= "_" then
+          _accum_0[_len_0] = k
+          _len_0 = _len_0 + 1
+        end
+      end
+      self.resp = _accum_0
+    end
+    library.log_err(inspect(data))
     if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
       self.resp = nil
     end
@@ -143,7 +167,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     if overwrite then
       red:del('backend:' .. asset_name)
     end
-    local ok, err = red:sadd('backend:' .. asset_name, asset_value)
+    local ok, err = red:zadd('backend:' .. asset_name, 0, asset_value)
     if overwrite then
       M.commit(self, red, "Failed to save backend: ")
     end
@@ -187,7 +211,7 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
       resp, self.msg = red:del('backend:' .. asset_name)
     else
       local resp
-      resp, self.msg = red:srem('backend:' .. asset_name, asset_value)
+      resp, self.msg = red:zrem('backend:' .. asset_name, asset_value)
     end
   else
     self.status = 400
@@ -251,7 +275,7 @@ M.save_batch_data = function(self, data, overwrite)
         local server = _list_1[_index_1]
         if not (server == nil) then
           library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-          red:sadd('backend:' .. backend["name"], server)
+          red:zadd('backend:' .. backend["name"], 0, server)
         end
       end
     end
@@ -291,7 +315,7 @@ M.delete_batch_data = function(self, data)
           local server = _list_1[_index_1]
           if not (server == nil) then
             library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-            red:srem('backend:' .. backend["name"], server)
+            red:zrem('backend:' .. backend["name"], server)
           end
         end
       end

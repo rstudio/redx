@@ -6,5 +6,5 @@ export socket = require 'socket'
 
 -- seed math.random
 math.randomseed(socket.gettime! * 1000)
-library.log(socket.gettime! * 1000)
+
 library.log('Redis host: ' .. config.redis_host .. ':' .. config.redis_port)

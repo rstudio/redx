@@ -347,19 +347,120 @@ M.fetch_server = function(self, backend_key)
     return nil
   end
   if config.stickiness > 0 and backend_cookie ~= nil and backend_cookie ~= '' then
-    local resp, err = red:sismember('backend:' .. backend_key, backend_cookie)
-    if resp == 1 then
-      upstream = backend_cookie
-    else
+    local resp, err = red:zscore('backend:' .. backend_key, backend_cookie)
+    if resp == nil then
       self.session.backend = nil
       upstream = nil
+    else
+      upstream = backend_cookie
     end
   end
   if upstream == nil then
-    local err
-    upstream, err = red:srandmember('backend:' .. backend_key)
-    if not (err == nil) then
-      library.log('Failed getting backend: ' .. err)
+    local rawdata, err = red:zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
+    local data = { }
+    do
+      local _tbl_0 = { }
+      for i, item in ipairs(rawdata) do
+        if i % 2 > 0 then
+          _tbl_0[item] = rawdata[i + 1]
+        end
+      end
+      data = _tbl_0
+    end
+    local upstreams = { }
+    do
+      local _accum_0 = { }
+      local _len_0 = 1
+      for k, v in pairs(data) do
+        if k:sub(1, 1) ~= "_" then
+          _accum_0[_len_0] = {
+            backend = k,
+            connections = tonumber(v)
+          }
+          _len_0 = _len_0 + 1
+        end
+      end
+      upstreams = _accum_0
+    end
+    local backend_config = { }
+    do
+      local _tbl_0 = { }
+      for k, v in pairs(data) do
+        if k:sub(1, 1) == "_" then
+          _tbl_0[k] = v
+        end
+      end
+      backend_config = _tbl_0
+    end
+    if #upstreams == 1 then
+      library.log_err('Only one backend, choosing it')
+      upstream = upstreams[1]['backend']
+    else
+      if config.balance_algorithm == 'least-connections' then
+        if #upstreams == 2 then
+          local max_connections = tonumber(backend_config['_max_connections'])
+          if not (max_connections == nil) then
+            local available_connections = 0
+            for _index_0 = 1, #upstreams do
+              local x = upstreams[_index_0]
+              available_connections = available_connections + (max_connections - x['connections'])
+            end
+            local rand = math.random(1, available_connections)
+            if rand <= (max_connections - upstreams[1]['connections']) then
+              upstream = upstreams[1]['backend']
+            else
+              upstream = upstreams[2]['backend']
+            end
+          end
+        else
+          local most_connections = nil
+          local least_connections = nil
+          for _index_0 = 1, #upstreams do
+            local up = upstreams[_index_0]
+            if most_connections == nil or up['connections'] > most_connections then
+              most_connections = up['connections']
+            end
+            if least_connections == nil or up['connections'] < least_connections then
+              least_connections = up['connections']
+            end
+          end
+          local available_upstreams
+          do
+            local _accum_0 = { }
+            local _len_0 = 1
+            for _index_0 = 1, #upstreams do
+              local up = upstreams[_index_0]
+              if up['connections'] < most_connections then
+                _accum_0[_len_0] = up
+                _len_0 = _len_0 + 1
+              end
+            end
+            available_upstreams = _accum_0
+          end
+          if #available_upstreams > 0 then
+            local available_connections = 0
+            for _index_0 = 1, #available_upstreams do
+              local x = available_upstreams[_index_0]
+              available_connections = available_connections + (most_connections - x['connections'])
+            end
+            local rand = math.random(available_connections)
+            local offset = 0
+            for _index_0 = 1, #available_upstreams do
+              local up = available_upstreams[_index_0]
+              if rand <= (most_connections - up['connections'] + offset) then
+                upstream = up['backend']
+                break
+              end
+              offset = offset + (most_connections - up['connections'])
+            end
+          end
+        end
+        if upstream == nil and #upstreams > 0 then
+          upstream = upstreams[math.random(#upstreams)]['backend']
+        end
+      else
+        upstream = upstreams[math.random(#upstreams)]['backend']
+      end
     end
   end
   M.finish(red)

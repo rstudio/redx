@@ -20,6 +20,13 @@ M.split = function(str, delim)
   end
   return _accum_0
 end
+M.length = function(dict)
+  local count = 0
+  for k, v in pairs(dict) do
+    count = count + 1
+  end
+  return count
+end
 M.Set = function(list)
   local set = { }
   for _, l in ipairs(list) do

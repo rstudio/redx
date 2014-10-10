@@ -59,15 +59,33 @@ webserver = class extends lapis.Application
             status: @status, json: json_response(@)
     }
 
+    '/backends/:name/config/:config': respond_to {
+        GET: =>
+            redis.get_config(@, unescape(@params.name), unescape(@params.config))
+            status: @status, json: json_response(@)
+    }
+
+    '/backends/:name/config/:config/:value': respond_to {
+        PUT: =>
+            redis.set_config(@, unescape(@params.name), unescape(@params.config), unescape(@params.value))
+            status: @status, json: json_response(@)
+    }
+
     '/:type/:name/:value': respond_to {
         POST: =>
-            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), false)
+            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), 0, false)
             status: @status, json: json_response(@)
         PUT: =>
-            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), true)
+            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), 0, true)
             status: @status, json: json_response(@)
         DELETE: =>
             redis.delete_data(@, @params.type, unescape(@params.name), unescape(@params.value))
+            status: @status, json: json_response(@)
+    }
+
+    '/:type/:name/:value/connections/:connections': respond_to {
+        PUT: =>
+            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), unescape(@params.connections), true)
             status: @status, json: json_response(@)
     }
 

@@ -24,4 +24,7 @@ M.Set = (list) ->
     set[l] = true
   return set
 
+M.multirequest = (reqs) ->
+  return { ngx.location.capture_multi(reqs) }
+
 return M

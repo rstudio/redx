@@ -134,6 +134,33 @@ curl -X DELETE localhost:8081/backends/mybackend
 curl -X DELETE localhost:8081/backends/mybackend/google.com%3A80
 ```
 
+### (PUT) /backends/\<name\>/\<server\>/connections/\<num_of_connections>
+
+The `backend connections` endpoint allows you to update the number of connections a backend has. This data is used by the `least-connections` load balancing algorithm to probabilistically send incoming requests to the most probably backend with the least connections.
+
+#### Examples
+
+##### `PUT` example
+```
+curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/31
+```
+
+### (GET|PUT) /backends/\<name\>/\<server\>/config/\<config_name\>/\<config_value\>
+
+The `backend configuration` endpoint allows you to get, update, or replace a backend config. Be sure to character escape as needed.
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/backends/mybackend/config/_max_connections/30
+```
+
+##### `PUT` example
+```
+curl -X POST localhost:8081/backends/mybackend/config/_max_connections
+```
+
 ### (DELETE) /flush
 
 Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.

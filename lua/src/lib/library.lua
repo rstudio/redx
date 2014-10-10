@@ -34,4 +34,9 @@ M.Set = function(list)
   end
   return set
 end
+M.multirequest = function(reqs)
+  return {
+    ngx.location.capture_multi(reqs)
+  }
+end
 return M

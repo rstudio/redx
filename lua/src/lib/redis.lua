@@ -83,6 +83,62 @@ M.flush = function(self)
   end
   return M.finish(red)
 end
+M.get_config = function(self, asset_name, config)
+  local red = M.connect(self)
+  if red == nil then
+    return nil
+  end
+  local config_value
+  config_value, self.msg = red:zscore('backend:' .. asset_name, '_' .. config)
+  if config_value == nil then
+    self.resp = nil
+  else
+    self.resp = {
+      [config] = config_value
+    }
+  end
+  if self.resp then
+    self.status = 200
+    self.msg = "OK"
+  end
+  if self.resp == nil then
+    self.status = 404
+    self.msg = "Entry does not exist"
+  else
+    if not (self.status) then
+      self.status = 500
+    end
+    if not (self.msg) then
+      self.msg = 'Unknown failutre'
+    end
+    library.log(self.msg)
+  end
+  return M.finish(red)
+end
+M.set_config = function(self, asset_name, config, value)
+  local red = M.connect(self)
+  if red == nil then
+    return nil
+  end
+  library.log(asset_name)
+  library.log(config)
+  library.log(value)
+  local ok, err = red:zadd('backend:' .. asset_name, value, '_' .. config)
+  library.log(ok)
+  library.log(err)
+  if ok >= 0 then
+    self.status = 200
+    self.msg = "OK"
+  else
+    self.status = 500
+    if err == nil then
+      err = "unknown"
+    end
+    self.msg = "Failed to save backend config: " .. err
+    library.log_err(self.msg)
+  end
+  return M.finish(red)
+end
 M.get_data = function(self, asset_type, asset_name)
   local red = M.connect(self)
   if red == nil then
@@ -122,7 +178,6 @@ M.get_data = function(self, asset_type, asset_name)
       end
       self.resp = _accum_0
     end
-    library.log_err(inspect(data))
     if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
       self.resp = nil
     end
@@ -148,7 +203,10 @@ M.get_data = function(self, asset_type, asset_name)
   end
   return M.finish(red)
 end
-M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
+M.save_data = function(self, asset_type, asset_name, asset_value, connections, overwrite)
+  if connections == nil then
+    connections = 0
+  end
   if overwrite == nil then
     overwrite = false
   end
@@ -167,7 +225,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     if overwrite then
       red:del('backend:' .. asset_name)
     end
-    local ok, err = red:zadd('backend:' .. asset_name, 0, asset_value)
+    local ok, err = red:zadd('backend:' .. asset_name, connections, asset_value)
     if overwrite then
       M.commit(self, red, "Failed to save backend: ")
     end

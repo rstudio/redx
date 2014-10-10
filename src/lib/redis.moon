@@ -73,7 +73,46 @@ M.flush = (@) ->
         @msg = err
         library.log_err(err)
     M.finish(red)
- 
+
+M.get_config = (@, asset_name, config) ->
+    red = M.connect(@)
+    return nil if red == nil
+    config_value, @msg = red\zscore('backend:' .. asset_name, '_' .. config)
+    if config_value == nil
+        @resp = nil
+    else
+        @resp = { [config]: config_value }
+    if @resp
+        @status = 200
+        @msg = "OK"
+    if @resp == nil
+        @status = 404
+        @msg = "Entry does not exist"
+    else
+        @status = 500 unless @status
+        @msg = 'Unknown failutre' unless @msg
+        library.log(@msg)
+    M.finish(red)
+
+M.set_config = (@, asset_name, config, value) ->
+    red = M.connect(@)
+    return nil if red == nil
+    library.log(asset_name)
+    library.log(config)
+    library.log(value)
+    ok, err = red\zadd('backend:' .. asset_name, value, '_' .. config)
+    library.log(ok)
+    library.log(err)
+    if ok >= 0
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500
+        err = "unknown" if err == nil
+        @msg = "Failed to save backend config: " .. err
+        library.log_err(@msg)
+    M.finish(red)
+
 M.get_data = (@, asset_type, asset_name) ->
     red = M.connect(@)
     return nil if red == nil
@@ -89,7 +128,6 @@ M.get_data = (@, asset_type, asset_name) ->
             @resp = {}
             data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
             @resp = [ k for k,v in pairs data when k\sub(1,1) != "_"]
-            library.log_err(inspect(data))
             @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
             @status = 400
@@ -106,7 +144,7 @@ M.get_data = (@, asset_type, asset_name) ->
         library.log(@msg)
     M.finish(red)
 
-M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
+M.save_data = (@, asset_type, asset_name, asset_value, connections=0, overwrite=false) ->
     red = M.connect(@)
     return nil if red == nil
     switch asset_type
@@ -116,7 +154,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\zadd('backend:' .. asset_name, 0, asset_value)
+            ok, err = red\zadd('backend:' .. asset_name, connections, asset_value)
             M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
@@ -290,7 +328,7 @@ M.fetch_server = (@, backend_key) ->
                                 break
                             offset += (most_connections - up['connections'])
                 if upstream == nil and #upstreams > 0
-                    -- if least-connections fails to find a backend fallback to pick one randomly
+                    -- if least-connections fails to find a backend, fallback to pick one randomly
                     upstream = upstreams[ math.random( #upstreams ) ]['backend']
             else
                 -- choose random upstream

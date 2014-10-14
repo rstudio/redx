@@ -155,7 +155,7 @@ The `backend score` endpoint allows you to update the score a backend has. This 
 
 ##### `PUT` example
 ```
-curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/31
+curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/score/31
 ```
 
 ### (GET|PUT) /backends/\<name\>/\<server\>/config/\<config_name\>/\<config_value\>

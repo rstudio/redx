@@ -7,5 +7,5 @@ M.redis_keepalive_pool_size = 0
 M.redis_keepalive_max_idle_timeout = 10000
 M.max_path_length = 1
 M.stickiness = 0
-M.balance_algorithm = 'least-score'
+M.balance_algorithm = 'random'
 return M

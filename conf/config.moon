@@ -32,5 +32,5 @@ M.stickiness = 0
 
 -- Load Balancing Algorithm
 -- "random" or "least-score" or "most-score"
-M.balance_algorithm = 'least-score'
+M.balance_algorithm = 'random'
 return M

@@ -30,6 +30,8 @@ At [rstudio](http://www.rstudio.com/), we find that redx performs slightly slowe
 Requirements
 ============
 
+[lapis](http://leafo.net/lapis/) version 1.0.4-1
+
 [openresty](http://openresty.org/) 1.7.2 or greater
 
 A [redis](http://redis.io/) server

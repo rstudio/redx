@@ -13,7 +13,7 @@ install:
   - sudo luarocks install luasec OPENSSL_DIR=/usr OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
   - sudo luarocks install luafilesystem
   - sudo luarocks install busted
-  - sudo luarocks install lapis
+  - sudo luarocks install lapis 1.0.4-1
   - sudo luarocks install moonscript
   - sudo luarocks install inspect
   - wget http://openresty.org/download/ngx_openresty-1.7.2.1.tar.gz

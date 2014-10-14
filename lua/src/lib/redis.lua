@@ -203,9 +203,9 @@ M.get_data = function(self, asset_type, asset_name)
   end
   return M.finish(red)
 end
-M.save_data = function(self, asset_type, asset_name, asset_value, connections, overwrite)
-  if connections == nil then
-    connections = 0
+M.save_data = function(self, asset_type, asset_name, asset_value, score, overwrite)
+  if score == nil then
+    score = 0
   end
   if overwrite == nil then
     overwrite = false
@@ -225,7 +225,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, connections, o
     if overwrite then
       red:del('backend:' .. asset_name)
     end
-    local ok, err = red:zadd('backend:' .. asset_name, connections, asset_value)
+    local ok, err = red:zadd('backend:' .. asset_name, score, asset_value)
     if overwrite then
       M.commit(self, red, "Failed to save backend: ")
     end
@@ -457,7 +457,7 @@ M.fetch_server = function(self, backend_key)
         if k:sub(1, 1) ~= "_" then
           _accum_0[_len_0] = {
             backend = k,
-            connections = tonumber(v)
+            score = tonumber(v)
           }
           _len_0 = _len_0 + 1
         end
@@ -478,62 +478,100 @@ M.fetch_server = function(self, backend_key)
       library.log_err('Only one backend, choosing it')
       upstream = upstreams[1]['backend']
     else
-      if config.balance_algorithm == 'least-connections' then
+      if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score' then
         if #upstreams == 2 then
-          local max_connections = tonumber(backend_config['_max_connections'])
-          if not (max_connections == nil) then
-            local available_connections = 0
+          local max_score = tonumber(backend_config['_max_score'])
+          if not (max_score == nil) then
+            local available_score = 0
             for _index_0 = 1, #upstreams do
               local x = upstreams[_index_0]
-              available_connections = available_connections + (max_connections - x['connections'])
+              if config.balance_algorithm == 'least-score' then
+                available_score = available_score + (max_score - x['score'])
+              else
+                available_score = available_score + x['score']
+              end
             end
-            local rand = math.random(1, available_connections)
-            if rand <= (max_connections - upstreams[1]['connections']) then
-              upstream = upstreams[1]['backend']
+            local rand = math.random(1, available_score)
+            if config.balance_algorithm == 'least-score' then
+              if rand <= (max_score - upstreams[1]['score']) then
+                upstream = upstreams[1]['backend']
+              else
+                upstream = upstreams[2]['backend']
+              end
             else
-              upstream = upstreams[2]['backend']
+              if rand <= (upstreams[1]['score']) then
+                upstream = upstreams[1]['backend']
+              else
+                upstream = upstreams[2]['backend']
+              end
             end
           end
         else
-          local most_connections = nil
-          local least_connections = nil
+          local most_score = nil
+          local least_score = nil
           for _index_0 = 1, #upstreams do
             local up = upstreams[_index_0]
-            if most_connections == nil or up['connections'] > most_connections then
-              most_connections = up['connections']
+            if most_score == nil or up['score'] > most_score then
+              most_score = up['score']
             end
-            if least_connections == nil or up['connections'] < least_connections then
-              least_connections = up['connections']
+            if least_score == nil or up['score'] < least_score then
+              least_score = up['score']
             end
           end
-          local available_upstreams
-          do
-            local _accum_0 = { }
-            local _len_0 = 1
-            for _index_0 = 1, #upstreams do
-              local up = upstreams[_index_0]
-              if up['connections'] < most_connections then
-                _accum_0[_len_0] = up
-                _len_0 = _len_0 + 1
+          if config.balance_algorithm == 'least-score' then
+            do
+              local _accum_0 = { }
+              local _len_0 = 1
+              for _index_0 = 1, #upstreams do
+                local up = upstreams[_index_0]
+                if up['score'] < most_score then
+                  _accum_0[_len_0] = up
+                  _len_0 = _len_0 + 1
+                end
               end
+              available_upstreams = _accum_0
             end
-            available_upstreams = _accum_0
+          else
+            do
+              local _accum_0 = { }
+              local _len_0 = 1
+              for _index_0 = 1, #upstreams do
+                local up = upstreams[_index_0]
+                if up['score'] > least_score then
+                  _accum_0[_len_0] = up
+                  _len_0 = _len_0 + 1
+                end
+              end
+              available_upstreams = _accum_0
+            end
           end
           if #available_upstreams > 0 then
-            local available_connections = 0
-            for _index_0 = 1, #available_upstreams do
-              local x = available_upstreams[_index_0]
-              available_connections = available_connections + (most_connections - x['connections'])
+            local available_score = 0
+            local _list_0 = available_upstreams
+            for _index_0 = 1, #_list_0 do
+              local x = _list_0[_index_0]
+              if config.balance_algorithm == 'least-score' then
+                available_score = available_score + (most_score - x['score'])
+              else
+                available_score = available_score + x['score']
+              end
             end
-            local rand = math.random(available_connections)
+            local rand = math.random(available_score)
             local offset = 0
-            for _index_0 = 1, #available_upstreams do
-              local up = available_upstreams[_index_0]
-              if rand <= (most_connections - up['connections'] + offset) then
+            local _list_1 = available_upstreams
+            for _index_0 = 1, #_list_1 do
+              local up = _list_1[_index_0]
+              local value = 0
+              if config.balance_algorithm == 'least-score' then
+                value = (most_score - up['score'])
+              else
+                value = up['score']
+              end
+              if rand <= (value + offset) then
                 upstream = up['backend']
                 break
               end
-              offset = offset + (most_connections - up['connections'])
+              offset = offset + value
             end
           end
         end

@@ -270,3 +270,7 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
         assert.same 200, code
         assert.same response['data'], { limit: '5' }
+
+    it "Create backend and set score #score_api", ->
+        response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}/score/30", "PUT")
+        assert.same 200, code

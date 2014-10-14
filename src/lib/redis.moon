@@ -144,7 +144,7 @@ M.get_data = (@, asset_type, asset_name) ->
         library.log(@msg)
     M.finish(red)
 
-M.save_data = (@, asset_type, asset_name, asset_value, connections=0, overwrite=false) ->
+M.save_data = (@, asset_type, asset_name, asset_value, score=0, overwrite=false) ->
     red = M.connect(@)
     return nil if red == nil
     switch asset_type
@@ -154,7 +154,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, connections=0, overwrite=
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\zadd('backend:' .. asset_name, connections, asset_value)
+            ok, err = red\zadd('backend:' .. asset_name, score, asset_value)
             M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
@@ -281,7 +281,7 @@ M.fetch_server = (@, backend_key) ->
         data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
         --split backends from config data
         upstreams = {}
-        upstreams = [{ backend:k, connections: tonumber(v)} for k,v in pairs data when k\sub(1,1) != "_"]
+        upstreams = [{ backend:k, score: tonumber(v)} for k,v in pairs data when k\sub(1,1) != "_"]
         backend_config = {}
         backend_config = {k,v for k,v in pairs data when k\sub(1,1) == "_"}
         if #upstreams == 1
@@ -289,46 +289,67 @@ M.fetch_server = (@, backend_key) ->
             library.log_err('Only one backend, choosing it')
             upstream = upstreams[1]['backend']
         else
-            if config.balance_algorithm == 'least-connections'
-                -- get least connection probability
+            if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score'
+                -- get least/most connection probability
                 if #upstreams == 2
-                    -- get least connection probability relative to max connections
-                    max_connections = tonumber(backend_config['_max_connections'])
-                    unless max_connections == nil
-                        -- get total number of available connections
-                        available_connections = 0
+                    -- get least/most connection probability relative to max score
+                    max_score = tonumber(backend_config['_max_score'])
+                    unless max_score == nil
+                        -- get total number of available score
+                        available_score = 0
                         for x in *upstreams
-                            available_connections += (max_connections - x['connections'])
-                        -- pick random number within total available connections
-                        rand = math.random( 1, available_connections )
-                        if rand <= (max_connections - upstreams[1]['connections'])
-                            upstream = upstreams[1]['backend']
+                            if config.balance_algorithm == 'least-score'
+                                available_score += (max_score - x['score'])
+                            else
+                                available_score += x['score']
+                        -- pick random number within total available score
+                        rand = math.random( 1, available_score )
+                        if config.balance_algorithm == 'least-score'
+                            if rand <= (max_score - upstreams[1]['score'])
+                                upstream = upstreams[1]['backend']
+                            else
+                                upstream = upstreams[2]['backend']
                         else
-                            upstream = upstreams[2]['backend']
+                            if rand <= (upstreams[1]['score'])
+                                upstream = upstreams[1]['backend']
+                            else
+                                upstream = upstreams[2]['backend']
+                            
                 else
-                    -- get least connection probability relative to larger connections
-                    -- get largest and least number of connections
-                    most_connections = nil
-                    least_connections = nil
+                    -- get least connection probability relative to larger score
+                    -- get largest and least number of score
+                    most_score = nil
+                    least_score = nil
                     for up in *upstreams
-                        if most_connections == nil or up['connections'] > most_connections
-                            most_connections = up['connections']
-                        if least_connections == nil or up['connections'] < least_connections
-                            least_connections = up['connections']
-                    available_upstreams = [ up for up in *upstreams when up['connections'] < most_connections]
+                        if most_score == nil or up['score'] > most_score
+                            most_score = up['score']
+                        if least_score == nil or up['score'] < least_score
+                            least_score = up['score']
+                    if config.balance_algorithm == 'least-score'
+                        export available_upstreams = [ up for up in *upstreams when up['score'] < most_score ]
+                    else
+                        export available_upstreams = [ up for up in *upstreams when up['score'] > least_score ]
                     if #available_upstreams > 0
-                        available_connections = 0 -- available connections to match highest connection count
+                        available_score = 0 -- available score to match highest connection count
                         for x in *available_upstreams
-                            available_connections += (most_connections - x['connections'])
-                        rand = math.random( available_connections )
+                            if config.balance_algorithm == 'least-score'
+                                available_score += (most_score - x['score'])
+                            else
+                                available_score += x['score']
+                        rand = math.random( available_score )
                         offset = 0
                         for up in *available_upstreams
-                            if rand <= (most_connections - up['connections'] + offset)
+                            value = 0
+                            if config.balance_algorithm == 'least-score'
+                                value = (most_score - up['score'])
+                            else
+                                value = up['score']
+                            if rand <= (value + offset)
                                 upstream = up['backend']
                                 break
-                            offset += (most_connections - up['connections'])
+                            offset += value
                 if upstream == nil and #upstreams > 0
-                    -- if least-connections fails to find a backend, fallback to pick one randomly
+                    -- if least-score fails to find a backend, fallback to pick one randomly
                     upstream = upstreams[ math.random( #upstreams ) ]['backend']
             else
                 -- choose random upstream

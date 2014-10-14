@@ -132,6 +132,15 @@ do
         }
       end
     }),
+    ['/backends/:name/:value/score/:score'] = respond_to({
+      PUT = function(self)
+        redis.save_data(self, 'backends', unescape(self.params.name), unescape(self.params.value), unescape(self.params.score), false)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
     ['/:type/:name/:value'] = respond_to({
       POST = function(self)
         redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), 0, false)
@@ -149,15 +158,6 @@ do
       end,
       DELETE = function(self)
         redis.delete_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value))
-        return {
-          status = self.status,
-          json = json_response(self)
-        }
-      end
-    }),
-    ['/:type/:name/:value/connections/:connections'] = respond_to({
-      PUT = function(self)
-        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), unescape(self.params.connections), true)
         return {
           status = self.status,
           json = json_response(self)

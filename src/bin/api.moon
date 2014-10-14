@@ -71,6 +71,12 @@ webserver = class extends lapis.Application
             status: @status, json: json_response(@)
     }
 
+    '/backends/:name/:value/score/:score': respond_to {
+        PUT: =>
+            redis.save_data(@, 'backends', unescape(@params.name), unescape(@params.value), unescape(@params.score), false)
+            status: @status, json: json_response(@)
+    }
+
     '/:type/:name/:value': respond_to {
         POST: =>
             redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), 0, false)
@@ -80,12 +86,6 @@ webserver = class extends lapis.Application
             status: @status, json: json_response(@)
         DELETE: =>
             redis.delete_data(@, @params.type, unescape(@params.name), unescape(@params.value))
-            status: @status, json: json_response(@)
-    }
-
-    '/:type/:name/:value/connections/:connections': respond_to {
-        PUT: =>
-            redis.save_data(@, @params.type, unescape(@params.name), unescape(@params.value), unescape(@params.connections), true)
             status: @status, json: json_response(@)
     }
 

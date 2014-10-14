@@ -31,6 +31,6 @@ M.max_path_length = 1
 M.stickiness = 0
 
 -- Load Balancing Algorithm
--- "random" or "least-connections"
-M.balance_algorithm = 'least-connections'
+-- "random" or "least-score" or "most-score"
+M.balance_algorithm = 'least-score'
 return M

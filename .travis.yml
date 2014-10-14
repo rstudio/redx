@@ -6,6 +6,10 @@ env:
 services:
   - redis-server
 
+branches:
+  only:
+    - master
+
 install:
   - sudo apt-get update
   - sudo apt-get install luajit luarocks

@@ -114,16 +114,43 @@ do
         }
       end
     }),
+    ['/backends/:name/config/:config'] = respond_to({
+      GET = function(self)
+        redis.get_config(self, unescape(self.params.name), unescape(self.params.config))
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
+    ['/backends/:name/config/:config/:value'] = respond_to({
+      PUT = function(self)
+        redis.set_config(self, unescape(self.params.name), unescape(self.params.config), unescape(self.params.value))
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
+    ['/backends/:name/:value/score/:score'] = respond_to({
+      PUT = function(self)
+        redis.save_data(self, 'backends', unescape(self.params.name), unescape(self.params.value), unescape(self.params.score), false)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
     ['/:type/:name/:value'] = respond_to({
       POST = function(self)
-        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), false)
+        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), 0, false)
         return {
           status = self.status,
           json = json_response(self)
         }
       end,
       PUT = function(self)
-        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), true)
+        redis.save_data(self, self.params.type, unescape(self.params.name), unescape(self.params.value), 0, true)
         return {
           status = self.status,
           json = json_response(self)

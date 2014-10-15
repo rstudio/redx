@@ -262,3 +262,15 @@ describe "redx_api", ->
         assert.same 404, code
         response, code, headers = make_json_request("/frontends/#{escape('foobar.com/path')}", "GET")
         assert.same 404, code
+
+    it "should create backend config #config_api", ->
+        response, code, headers = make_json_request("/backends/5555/config/limit/5", "PUT")
+        assert.same 200, code
+
+        response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
+        assert.same 200, code
+        assert.same response['data'], { limit: '5' }
+
+    it "Create backend and set score #score_api", ->
+        response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}/score/30", "PUT")
+        assert.same 200, code

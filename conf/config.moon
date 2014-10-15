@@ -28,5 +28,9 @@ M.max_path_length = 1
 -- Stickiness
 -- Amount of time (in seconds) you wish the session to be sticky
 -- Set to 0 if you want to disable stickiness
-M.stickiness = 900
+M.stickiness = 0
+
+-- Load Balancing Algorithm
+-- "random" or "least-score" or "most-score"
+M.balance_algorithm = 'random'
 return M

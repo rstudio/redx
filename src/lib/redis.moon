@@ -73,7 +73,46 @@ M.flush = (@) ->
         @msg = err
         library.log_err(err)
     M.finish(red)
- 
+
+M.get_config = (@, asset_name, config) ->
+    red = M.connect(@)
+    return nil if red == nil
+    config_value, @msg = red\zscore('backend:' .. asset_name, '_' .. config)
+    if config_value == nil
+        @resp = nil
+    else
+        @resp = { [config]: config_value }
+    if @resp
+        @status = 200
+        @msg = "OK"
+    if @resp == nil
+        @status = 404
+        @msg = "Entry does not exist"
+    else
+        @status = 500 unless @status
+        @msg = 'Unknown failutre' unless @msg
+        library.log(@msg)
+    M.finish(red)
+
+M.set_config = (@, asset_name, config, value) ->
+    red = M.connect(@)
+    return nil if red == nil
+    library.log(asset_name)
+    library.log(config)
+    library.log(value)
+    ok, err = red\zadd('backend:' .. asset_name, value, '_' .. config)
+    library.log(ok)
+    library.log(err)
+    if ok >= 0
+        @status = 200
+        @msg = "OK"
+    else
+        @status = 500
+        err = "unknown" if err == nil
+        @msg = "Failed to save backend config: " .. err
+        library.log_err(@msg)
+    M.finish(red)
+
 M.get_data = (@, asset_type, asset_name) ->
     red = M.connect(@)
     return nil if red == nil
@@ -84,7 +123,11 @@ M.get_data = (@, asset_type, asset_name) ->
             if getmetatable(@resp) == nil
                 @resp = nil
         when 'backends'
-            @resp, @msg = red\smembers('backend:' .. asset_name)
+            rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+            data = {}
+            @resp = {}
+            data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
+            @resp = [ k for k,v in pairs data when k\sub(1,1) != "_"]
             @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
             @status = 400
@@ -101,7 +144,7 @@ M.get_data = (@, asset_type, asset_name) ->
         library.log(@msg)
     M.finish(red)
 
-M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
+M.save_data = (@, asset_type, asset_name, asset_value, score=0, overwrite=false) ->
     red = M.connect(@)
     return nil if red == nil
     switch asset_type
@@ -111,7 +154,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, overwrite=false) ->
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\sadd('backend:' .. asset_name, asset_value)
+            ok, err = red\zadd('backend:' .. asset_name, score, asset_value)
             M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
@@ -138,7 +181,7 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
             if asset_value == nil
                 resp, @msg = red\del('backend:' .. asset_name)
             else
-                resp, @msg = red\srem('backend:' .. asset_name, asset_value)
+                resp, @msg = red\zrem('backend:' .. asset_name, asset_value)
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'
@@ -170,7 +213,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
             for server in *backend['servers']
                 unless server == nil
                     library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-                    red\sadd('backend:' .. backend["name"], server)
+                    red\zadd('backend:' .. backend["name"], 0, server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -191,7 +234,7 @@ M.delete_batch_data = (@, data) ->
                 for server in *backend['servers']
                     unless server == nil
                         library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-                        red\srem('backend:' .. backend["name"], server)
+                        red\zrem('backend:' .. backend["name"], server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -225,16 +268,92 @@ M.fetch_server = (@, backend_key) ->
     red = M.connect(@)
     return nil if red == nil
     if config.stickiness > 0 and backend_cookie != nil and backend_cookie != ''
-        resp, err = red\sismember('backend:' .. backend_key, backend_cookie)
-        if resp == 1
-            export upstream = backend_cookie
-        else
+        resp, err = red\zscore('backend:' .. backend_key, backend_cookie)
+        if resp == nil
             -- clear cookie by setting to nil
             @session.backend = nil
             export upstream = nil
+        else
+            export upstream = backend_cookie
     if upstream == nil
-        upstream, err = red\srandmember('backend:' .. backend_key)
-        library.log('Failed getting backend: ' .. err) unless err == nil
+        rawdata, err = red\zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
+        data = {}
+        data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
+        --split backends from config data
+        upstreams = {}
+        upstreams = [{ backend:k, score: tonumber(v)} for k,v in pairs data when k\sub(1,1) != "_"]
+        backend_config = {}
+        backend_config = {k,v for k,v in pairs data when k\sub(1,1) == "_"}
+        if #upstreams == 1
+            -- only one backend available
+            library.log_err('Only one backend, choosing it')
+            upstream = upstreams[1]['backend']
+        else
+            if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score'
+                -- get least/most connection probability
+                if #upstreams == 2
+                    -- get least/most connection probability relative to max score
+                    max_score = tonumber(backend_config['_max_score'])
+                    unless max_score == nil
+                        -- get total number of available score
+                        available_score = 0
+                        for x in *upstreams
+                            if config.balance_algorithm == 'least-score'
+                                available_score += (max_score - x['score'])
+                            else
+                                available_score += x['score']
+                        -- pick random number within total available score
+                        rand = math.random( 1, available_score )
+                        if config.balance_algorithm == 'least-score'
+                            if rand <= (max_score - upstreams[1]['score'])
+                                upstream = upstreams[1]['backend']
+                            else
+                                upstream = upstreams[2]['backend']
+                        else
+                            if rand <= (upstreams[1]['score'])
+                                upstream = upstreams[1]['backend']
+                            else
+                                upstream = upstreams[2]['backend']
+                            
+                else
+                    -- get least connection probability relative to larger score
+                    -- get largest and least number of score
+                    most_score = nil
+                    least_score = nil
+                    for up in *upstreams
+                        if most_score == nil or up['score'] > most_score
+                            most_score = up['score']
+                        if least_score == nil or up['score'] < least_score
+                            least_score = up['score']
+                    if config.balance_algorithm == 'least-score'
+                        export available_upstreams = [ up for up in *upstreams when up['score'] < most_score ]
+                    else
+                        export available_upstreams = [ up for up in *upstreams when up['score'] > least_score ]
+                    if #available_upstreams > 0
+                        available_score = 0 -- available score to match highest connection count
+                        for x in *available_upstreams
+                            if config.balance_algorithm == 'least-score'
+                                available_score += (most_score - x['score'])
+                            else
+                                available_score += x['score']
+                        rand = math.random( available_score )
+                        offset = 0
+                        for up in *available_upstreams
+                            value = 0
+                            if config.balance_algorithm == 'least-score'
+                                value = (most_score - up['score'])
+                            else
+                                value = up['score']
+                            if rand <= (value + offset)
+                                upstream = up['backend']
+                                break
+                            offset += value
+                if upstream == nil and #upstreams > 0
+                    -- if least-score fails to find a backend, fallback to pick one randomly
+                    upstream = upstreams[ math.random( #upstreams ) ]['backend']
+            else
+                -- choose random upstream
+                upstream = upstreams[ math.random( #upstreams ) ]['backend']
     M.finish(red)
     if type(upstream) == 'string'
         if config.stickiness > 0

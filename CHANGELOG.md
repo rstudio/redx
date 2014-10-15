@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## 1.2.0 (2014-10-14)
+
+### Feature
++ [PR](https://github.com/rstudio/redx/pulls): Add ability to probabilistically load balance backends based on their score value (most or least)
+
 ## 1.1.0 (2014-07-27)
 
 ### Feature

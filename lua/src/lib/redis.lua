@@ -83,6 +83,62 @@ M.flush = function(self)
   end
   return M.finish(red)
 end
+M.get_config = function(self, asset_name, config)
+  local red = M.connect(self)
+  if red == nil then
+    return nil
+  end
+  local config_value
+  config_value, self.msg = red:zscore('backend:' .. asset_name, '_' .. config)
+  if config_value == nil then
+    self.resp = nil
+  else
+    self.resp = {
+      [config] = config_value
+    }
+  end
+  if self.resp then
+    self.status = 200
+    self.msg = "OK"
+  end
+  if self.resp == nil then
+    self.status = 404
+    self.msg = "Entry does not exist"
+  else
+    if not (self.status) then
+      self.status = 500
+    end
+    if not (self.msg) then
+      self.msg = 'Unknown failutre'
+    end
+    library.log(self.msg)
+  end
+  return M.finish(red)
+end
+M.set_config = function(self, asset_name, config, value)
+  local red = M.connect(self)
+  if red == nil then
+    return nil
+  end
+  library.log(asset_name)
+  library.log(config)
+  library.log(value)
+  local ok, err = red:zadd('backend:' .. asset_name, value, '_' .. config)
+  library.log(ok)
+  library.log(err)
+  if ok >= 0 then
+    self.status = 200
+    self.msg = "OK"
+  else
+    self.status = 500
+    if err == nil then
+      err = "unknown"
+    end
+    self.msg = "Failed to save backend config: " .. err
+    library.log_err(self.msg)
+  end
+  return M.finish(red)
+end
 M.get_data = function(self, asset_type, asset_name)
   local red = M.connect(self)
   if red == nil then
@@ -98,7 +154,30 @@ M.get_data = function(self, asset_type, asset_name)
       self.resp = nil
     end
   elseif 'backends' == _exp_0 then
-    self.resp, self.msg = red:smembers('backend:' .. asset_name)
+    local rawdata
+    rawdata, self.msg = red:zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+    local data = { }
+    self.resp = { }
+    do
+      local _tbl_0 = { }
+      for i, item in ipairs(rawdata) do
+        if i % 2 > 0 then
+          _tbl_0[item] = rawdata[i + 1]
+        end
+      end
+      data = _tbl_0
+    end
+    do
+      local _accum_0 = { }
+      local _len_0 = 1
+      for k, v in pairs(data) do
+        if k:sub(1, 1) ~= "_" then
+          _accum_0[_len_0] = k
+          _len_0 = _len_0 + 1
+        end
+      end
+      self.resp = _accum_0
+    end
     if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
       self.resp = nil
     end
@@ -124,7 +203,10 @@ M.get_data = function(self, asset_type, asset_name)
   end
   return M.finish(red)
 end
-M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
+M.save_data = function(self, asset_type, asset_name, asset_value, score, overwrite)
+  if score == nil then
+    score = 0
+  end
   if overwrite == nil then
     overwrite = false
   end
@@ -143,7 +225,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, overwrite)
     if overwrite then
       red:del('backend:' .. asset_name)
     end
-    local ok, err = red:sadd('backend:' .. asset_name, asset_value)
+    local ok, err = red:zadd('backend:' .. asset_name, score, asset_value)
     if overwrite then
       M.commit(self, red, "Failed to save backend: ")
     end
@@ -187,7 +269,7 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
       resp, self.msg = red:del('backend:' .. asset_name)
     else
       local resp
-      resp, self.msg = red:srem('backend:' .. asset_name, asset_value)
+      resp, self.msg = red:zrem('backend:' .. asset_name, asset_value)
     end
   else
     self.status = 400
@@ -251,7 +333,7 @@ M.save_batch_data = function(self, data, overwrite)
         local server = _list_1[_index_1]
         if not (server == nil) then
           library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-          red:sadd('backend:' .. backend["name"], server)
+          red:zadd('backend:' .. backend["name"], 0, server)
         end
       end
     end
@@ -291,7 +373,7 @@ M.delete_batch_data = function(self, data)
           local server = _list_1[_index_1]
           if not (server == nil) then
             library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-            red:srem('backend:' .. backend["name"], server)
+            red:zrem('backend:' .. backend["name"], server)
           end
         end
       end
@@ -347,19 +429,158 @@ M.fetch_server = function(self, backend_key)
     return nil
   end
   if config.stickiness > 0 and backend_cookie ~= nil and backend_cookie ~= '' then
-    local resp, err = red:sismember('backend:' .. backend_key, backend_cookie)
-    if resp == 1 then
-      upstream = backend_cookie
-    else
+    local resp, err = red:zscore('backend:' .. backend_key, backend_cookie)
+    if resp == nil then
       self.session.backend = nil
       upstream = nil
+    else
+      upstream = backend_cookie
     end
   end
   if upstream == nil then
-    local err
-    upstream, err = red:srandmember('backend:' .. backend_key)
-    if not (err == nil) then
-      library.log('Failed getting backend: ' .. err)
+    local rawdata, err = red:zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
+    local data = { }
+    do
+      local _tbl_0 = { }
+      for i, item in ipairs(rawdata) do
+        if i % 2 > 0 then
+          _tbl_0[item] = rawdata[i + 1]
+        end
+      end
+      data = _tbl_0
+    end
+    local upstreams = { }
+    do
+      local _accum_0 = { }
+      local _len_0 = 1
+      for k, v in pairs(data) do
+        if k:sub(1, 1) ~= "_" then
+          _accum_0[_len_0] = {
+            backend = k,
+            score = tonumber(v)
+          }
+          _len_0 = _len_0 + 1
+        end
+      end
+      upstreams = _accum_0
+    end
+    local backend_config = { }
+    do
+      local _tbl_0 = { }
+      for k, v in pairs(data) do
+        if k:sub(1, 1) == "_" then
+          _tbl_0[k] = v
+        end
+      end
+      backend_config = _tbl_0
+    end
+    if #upstreams == 1 then
+      library.log_err('Only one backend, choosing it')
+      upstream = upstreams[1]['backend']
+    else
+      if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score' then
+        if #upstreams == 2 then
+          local max_score = tonumber(backend_config['_max_score'])
+          if not (max_score == nil) then
+            local available_score = 0
+            for _index_0 = 1, #upstreams do
+              local x = upstreams[_index_0]
+              if config.balance_algorithm == 'least-score' then
+                available_score = available_score + (max_score - x['score'])
+              else
+                available_score = available_score + x['score']
+              end
+            end
+            local rand = math.random(1, available_score)
+            if config.balance_algorithm == 'least-score' then
+              if rand <= (max_score - upstreams[1]['score']) then
+                upstream = upstreams[1]['backend']
+              else
+                upstream = upstreams[2]['backend']
+              end
+            else
+              if rand <= (upstreams[1]['score']) then
+                upstream = upstreams[1]['backend']
+              else
+                upstream = upstreams[2]['backend']
+              end
+            end
+          end
+        else
+          local most_score = nil
+          local least_score = nil
+          for _index_0 = 1, #upstreams do
+            local up = upstreams[_index_0]
+            if most_score == nil or up['score'] > most_score then
+              most_score = up['score']
+            end
+            if least_score == nil or up['score'] < least_score then
+              least_score = up['score']
+            end
+          end
+          if config.balance_algorithm == 'least-score' then
+            do
+              local _accum_0 = { }
+              local _len_0 = 1
+              for _index_0 = 1, #upstreams do
+                local up = upstreams[_index_0]
+                if up['score'] < most_score then
+                  _accum_0[_len_0] = up
+                  _len_0 = _len_0 + 1
+                end
+              end
+              available_upstreams = _accum_0
+            end
+          else
+            do
+              local _accum_0 = { }
+              local _len_0 = 1
+              for _index_0 = 1, #upstreams do
+                local up = upstreams[_index_0]
+                if up['score'] > least_score then
+                  _accum_0[_len_0] = up
+                  _len_0 = _len_0 + 1
+                end
+              end
+              available_upstreams = _accum_0
+            end
+          end
+          if #available_upstreams > 0 then
+            local available_score = 0
+            local _list_0 = available_upstreams
+            for _index_0 = 1, #_list_0 do
+              local x = _list_0[_index_0]
+              if config.balance_algorithm == 'least-score' then
+                available_score = available_score + (most_score - x['score'])
+              else
+                available_score = available_score + x['score']
+              end
+            end
+            local rand = math.random(available_score)
+            local offset = 0
+            local _list_1 = available_upstreams
+            for _index_0 = 1, #_list_1 do
+              local up = _list_1[_index_0]
+              local value = 0
+              if config.balance_algorithm == 'least-score' then
+                value = (most_score - up['score'])
+              else
+                value = up['score']
+              end
+              if rand <= (value + offset) then
+                upstream = up['backend']
+                break
+              end
+              offset = offset + value
+            end
+          end
+        end
+        if upstream == nil and #upstreams > 0 then
+          upstream = upstreams[math.random(#upstreams)]['backend']
+        end
+      else
+        upstream = upstreams[math.random(#upstreams)]['backend']
+      end
     end
   end
   M.finish(red)

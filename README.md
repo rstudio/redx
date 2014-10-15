@@ -30,6 +30,8 @@ At [rstudio](http://www.rstudio.com/), we find that redx performs slightly slowe
 Requirements
 ============
 
+[lapis](http://leafo.net/lapis/) version 1.0.4-1
+
 [openresty](http://openresty.org/) 1.7.2 or greater
 
 A [redis](http://redis.io/) server
@@ -86,6 +88,17 @@ Currently max_path_length must be a minimum of 1, but that will change in the fu
 ##### stickiness
 The amount of time (in seconds) you wish the session to be "sticky", and consistently use the same upstream server. If you wish to disable "stickiness", set value to 0 (zero).
 
+##### balance\_algorithm
+The load balancing algorithm you want to use to balance traffic to your backends. The options are `least-score`, `most-score`, and `random`. `Random` is the default.
+
+Load Balancing Algorithms
+=========================
+
+Redx has a few options for how to load balance to various backends. The default, is `random` which works exactly how you would imagine. The other options are `least-score` and `most-score`. 
+For `least-score` and `most-score`, associated with each backend, is a score. This score number is arbitrary, and can be whatever you want it to be. It can represent the number of connections a backend has, the amount of cpu or memory a backend is using, or something custom to your application like number of threads.
+Each set of backends can be configured to have a maximum score (ie max number of connections, CPU usage, max number of threads, etc). This maximum value is used in evaluating which backend traffic is sent to. It is important to note, that due to the score values are assumed not to be realtime, we use a probabilistic approach to routing traffic. This is so we don't send all traffic to a single backend in between each update of the score value. So efforts to balance traffic is "best efforts" and are **NOT** guarenteed. Similar to a casino, while you may statistically loose some money sometimes, eventually the house always wins.
+Load balancing does **NOT** override stickiness. If you have stickiness enabled, it is honored while a stickiness session exists. But new traffic, aka traffic that doesn't have an active stickiness session, are load balanced according to the algorithm chosen.
+
 API
 ===
 
@@ -132,6 +145,33 @@ curl -X POST localhost:8081/backends/mybackend/google.com%3A80
 curl -X DELETE localhost:8081/backends/mybackend
 # will delete one server in the backend
 curl -X DELETE localhost:8081/backends/mybackend/google.com%3A80
+```
+
+### (PUT) /backends/\<name\>/\<server\>/score/\<score>
+
+The `backend score` endpoint allows you to update the score a backend has. This score is used by the `least-score` and `most-score` load balancing algorithm to probabilistically send incoming requests to the most probably backend with the least or most score.
+
+#### Examples
+
+##### `PUT` example
+```
+curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/score/31
+```
+
+### (GET|PUT) /backends/\<name\>/\<server\>/config/\<config_name\>/\<config_value\>
+
+The `backend configuration` endpoint allows you to get, update, or replace a backend config. Be sure to character escape as needed.
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/backends/mybackend/config/_max_score/30
+```
+
+##### `PUT` example
+```
+curl -X POST localhost:8081/backends/mybackend/config/_max_score
 ```
 
 ### (DELETE) /flush

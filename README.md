@@ -171,7 +171,7 @@ curl localhost:8081/backends/mybackend/config/_max_score/30
 
 ##### `PUT` example
 ```
-curl -X POST localhost:8081/backends/mybackend/config/_max_score
+curl -X PUT localhost:8081/backends/mybackend/config/_max_score
 ```
 
 ### (DELETE) /flush

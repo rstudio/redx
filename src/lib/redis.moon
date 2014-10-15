@@ -269,7 +269,7 @@ M.fetch_server = (@, backend_key) ->
     return nil if red == nil
     if config.stickiness > 0 and backend_cookie != nil and backend_cookie != ''
         resp, err = red\zscore('backend:' .. backend_key, backend_cookie)
-        if resp == nil
+        if resp != "0"
             -- clear cookie by setting to nil
             @session.backend = nil
             export upstream = nil

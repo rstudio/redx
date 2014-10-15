@@ -430,7 +430,7 @@ M.fetch_server = function(self, backend_key)
   end
   if config.stickiness > 0 and backend_cookie ~= nil and backend_cookie ~= '' then
     local resp, err = red:zscore('backend:' .. backend_key, backend_cookie)
-    if resp == nil then
+    if resp ~= "0" then
       self.session.backend = nil
       upstream = nil
     else

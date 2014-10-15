@@ -166,12 +166,12 @@ The `backend configuration` endpoint allows you to get, update, or replace a bac
 
 ##### `GET` example
 ```
-curl localhost:8081/backends/mybackend/config/_max_score/30
+curl localhost:8081/backends/mybackend/config/max_score/30
 ```
 
 ##### `PUT` example
 ```
-curl -X PUT localhost:8081/backends/mybackend/config/_max_score
+curl -X PUT localhost:8081/backends/mybackend/config/max_score
 ```
 
 ### (DELETE) /flush

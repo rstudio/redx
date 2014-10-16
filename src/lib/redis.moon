@@ -144,13 +144,17 @@ M.get_data = (@, asset_type, asset_name) ->
         library.log(@msg)
     M.finish(red)
 
-M.save_data = (@, asset_type, asset_name, asset_value, score=0, overwrite=false) ->
+M.save_data = (@, asset_type, asset_name, asset_value, score, overwrite=false) ->
     red = M.connect(@)
     return nil if red == nil
     switch asset_type
         when 'frontends'
             ok, err = red\set('frontend:' .. asset_name, asset_value)
         when 'backends'
+            if config.default_score == nil
+                config.default_score = 0
+            if score == nil
+                score = config.default_score
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
@@ -213,7 +217,9 @@ M.save_batch_data = (@, data, overwrite=false) ->
             for server in *backend['servers']
                 unless server == nil
                     library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-                    red\zadd('backend:' .. backend["name"], 0, server)
+                    if config.default_score == nil
+                        config.default_score = 0
+                    red\zadd('backend:' .. backend["name"], config.default_score, server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 

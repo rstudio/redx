@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## 1.2.1 (2014-10-15)
+
+### Feature
++ [PR](https://github.com/rstudio/redx/pull/5): Adds the ability to set a default score value when one is not provided.
+
 ## 1.2.0 (2014-10-14)
 
 ### Feature

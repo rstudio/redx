@@ -91,6 +91,9 @@ The amount of time (in seconds) you wish the session to be "sticky", and consist
 ##### balance\_algorithm
 The load balancing algorithm you want to use to balance traffic to your backends. The options are `least-score`, `most-score`, and `random`. `Random` is the default.
 
+##### default\_score
+The default score is the score that is inserted into backends in the case where a score is not provided (ie batch upating). If this config option isn't specified, it defaults to 0 (zero).
+
 Load Balancing Algorithms
 =========================
 

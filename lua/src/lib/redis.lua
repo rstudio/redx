@@ -204,9 +204,6 @@ M.get_data = function(self, asset_type, asset_name)
   return M.finish(red)
 end
 M.save_data = function(self, asset_type, asset_name, asset_value, score, overwrite)
-  if score == nil then
-    score = 0
-  end
   if overwrite == nil then
     overwrite = false
   end
@@ -218,6 +215,12 @@ M.save_data = function(self, asset_type, asset_name, asset_value, score, overwri
   if 'frontends' == _exp_0 then
     local ok, err = red:set('frontend:' .. asset_name, asset_value)
   elseif 'backends' == _exp_0 then
+    if config.default_score == nil then
+      config.default_score = 0
+    end
+    if score == nil then
+      score = config.default_score
+    end
     red = M.connect(self)
     if overwrite then
       red:init_pipeline()
@@ -333,7 +336,10 @@ M.save_batch_data = function(self, data, overwrite)
         local server = _list_1[_index_1]
         if not (server == nil) then
           library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-          red:zadd('backend:' .. backend["name"], 0, server)
+          if config.default_score == nil then
+            config.default_score = 0
+          end
+          red:zadd('backend:' .. backend["name"], config.default_score, server)
         end
       end
     end

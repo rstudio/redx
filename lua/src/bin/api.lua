@@ -98,6 +98,24 @@ do
         }
       end
     }),
+    ['/frontends'] = respond_to({
+      GET = function(self)
+        redis.get_data(self, 'frontends', nil)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
+    ['/backends'] = respond_to({
+      GET = function(self)
+        redis.get_data(self, 'backends', nil)
+        return {
+          status = self.status,
+          json = json_response(self)
+        }
+      end
+    }),
     ['/:type/:name'] = respond_to({
       GET = function(self)
         redis.get_data(self, self.params.type, unescape(self.params.name))

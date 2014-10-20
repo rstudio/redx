@@ -105,6 +105,17 @@ Load balancing does **NOT** override stickiness. If you have stickiness enabled,
 API
 ===
 
+### (GET) /frontends
+
+The `frontends` endpoint allows you to get all current frontends
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/frontends
+```
+
 ### (GET|POST|PUT|DELETE) /frontends/\<url\>/\<backend_name\>
 
 The `frontends` endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
@@ -124,6 +135,17 @@ curl -X POST localhost:8081/frontends/myhost.com%2Ftest/mybackend
 ##### `DELETE` example
 ```
 curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest
+```
+
+### (GET) /backends
+
+The `backends` endpoint allows you to get all backends.
+
+#### Examples
+
+##### `GET` example
+```
+curl localhost:8081/backends
 ```
 
 ### (GET|POST|PUT|DELETE) /backends/\<name\>/\<server\>

@@ -20,8 +20,8 @@ export json_body = from_json('{
         {
             "name": "12345",
             "servers": [
-                "google.com:80",
-                "duckduckgo.com:80"
+                "duckduckgo.com:80",
+                "google.com:80"
             ]
         },
         {
@@ -81,6 +81,13 @@ describe "redx_api", ->
         assert.same 200, code
         assert.same response, { message: "OK", data: "mybackend" }
 
+    it "get all frontends #frontend_api", ->
+        response, code, headers = make_json_request("/batch", "POST", json_body)
+        assert.same 200, code
+
+        response, code, headers = make_json_request("/frontends")
+        assert.same response, { message: "OK", data: json_body['frontends'] }
+
     it "get 404 on invalid frontend #frontend_api", ->
         response, code, headers = make_json_request("/frontends/this_frontend_does_not_exist")
         assert.same 404, code
@@ -108,6 +115,13 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555")
         assert.same 200, code
         assert.same response, { message: "OK", data: { 'rstudio.com:80' } }
+
+    it "get all backends #backend_api", ->
+        response, code, headers = make_json_request("/batch", "POST", json_body)
+        assert.same 200, code
+
+        response, code, headers = make_json_request("/backends")
+        assert.same response, { message: "OK", data: json_body['backends'] }
 
     it "PUT replaces backend #backend_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "POST")

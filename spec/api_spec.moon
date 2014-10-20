@@ -116,7 +116,7 @@ describe "redx_api", ->
         assert.same 200, code
         assert.same response, { message: "OK", data: { 'rstudio.com:80' } }
 
-    it "get all backends #backend_api_all", ->
+    it "get all backends #backend_api", ->
         response, code, headers = make_json_request("/batch", "POST", json_body)
         assert.same 200, code
 

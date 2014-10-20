@@ -14,12 +14,13 @@ install:
   - sudo apt-get update
   - sudo apt-get install luajit luarocks
   - sudo apt-get install libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl make
-  - sudo luarocks install luasec OPENSSL_DIR=/usr OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
+  - sudo luarocks install luasec 0.5-2 OPENSSL_DIR=/usr OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu 
   - sudo luarocks install luafilesystem
-  - sudo luarocks install busted
+  - sudo luarocks install busted 2.0.rc3-0
+  - sudo luarocks install lua-cjson 2.1.0-1
   - sudo luarocks install lapis 1.0.4-1
-  - sudo luarocks install moonscript
-  - sudo luarocks install inspect
+  - sudo luarocks install moonscript 0.2.6-1
+  - sudo luarocks install inspect 2.0-1
   - wget http://openresty.org/download/ngx_openresty-1.7.2.1.tar.gz
   - tar xzvf ngx_openresty-1.7.2.1.tar.gz
   - cd ngx_openresty-1.7.2.1/

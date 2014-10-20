@@ -109,7 +109,7 @@ return describe("redx_api", function()
       }
     })
   end)
-  it("get all backends #backend_api_all", function()
+  it("get all backends #backend_api", function()
     local response, code, headers = make_json_request("/batch", "POST", json_body)
     assert.same(200, code)
     response, code, headers = make_json_request("/backends")

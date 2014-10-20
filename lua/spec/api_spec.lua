@@ -11,7 +11,7 @@ end
 inspect = require("inspect")
 http = require("socket.http")
 ltn12 = require("ltn12")
-json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                "google.com:80",\n                "duckduckgo.com:80"\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ]\n        }\n    ]\n}')
+json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                "duckduckgo.com:80",\n                "google.com:80"\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ]\n        }\n    ]\n}')
 local make_json_request
 make_json_request = function(url, method, body, port)
   if method == nil then
@@ -70,6 +70,15 @@ return describe("redx_api", function()
       data = "mybackend"
     })
   end)
+  it("get all frontends #frontend_api", function()
+    local response, code, headers = make_json_request("/batch", "POST", json_body)
+    assert.same(200, code)
+    response, code, headers = make_json_request("/frontends")
+    return assert.same(response, {
+      message = "OK",
+      data = json_body['frontends']
+    })
+  end)
   it("get 404 on invalid frontend #frontend_api", function()
     local response, code, headers = make_json_request("/frontends/this_frontend_does_not_exist")
     return assert.same(404, code)
@@ -98,6 +107,15 @@ return describe("redx_api", function()
       data = {
         'rstudio.com:80'
       }
+    })
+  end)
+  it("get all backends #backend_api_all", function()
+    local response, code, headers = make_json_request("/batch", "POST", json_body)
+    assert.same(200, code)
+    response, code, headers = make_json_request("/backends")
+    return assert.same(response, {
+      message = "OK",
+      data = json_body['backends']
     })
   end)
   it("PUT replaces backend #backend_api", function()

@@ -50,6 +50,18 @@ webserver = class extends lapis.Application
             status: @status, json: json_response(@)
     }
 
+    '/frontends': respond_to {
+        GET: =>
+            redis.get_data(@, 'frontends', nil)
+            status: @status, json: json_response(@)
+    }
+
+    '/backends': respond_to {
+        GET: =>
+            redis.get_data(@, 'backends', nil)
+            status: @status, json: json_response(@)
+    }
+
     '/:type/:name': respond_to {
         GET: =>
             redis.get_data(@, @params.type, unescape(@params.name))

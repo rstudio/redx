@@ -120,12 +120,7 @@ M.set_config = function(self, asset_name, config, value)
   if red == nil then
     return nil
   end
-  library.log(asset_name)
-  library.log(config)
-  library.log(value)
   local ok, err = red:zadd('backend:' .. asset_name, value, '_' .. config)
-  library.log(ok)
-  library.log(err)
   if ok >= 0 then
     self.status = 200
     self.msg = "OK"
@@ -146,40 +141,71 @@ M.get_data = function(self, asset_type, asset_name)
   end
   local _exp_0 = asset_type
   if 'frontends' == _exp_0 then
-    self.resp, self.msg = red:get('frontend:' .. asset_name)
+    if asset_name == nil then
+      self.resp = { }
+      local keys, err = red:keys('frontend:*')
+      for _index_0 = 1, #keys do
+        local key = keys[_index_0]
+        local url = library.split(key, ':')
+        url = url[#url]
+        local backend_name = red:get(key)
+        table.insert(self.resp, 1, {
+          url = url,
+          backend_name = backend_name
+        })
+      end
+    else
+      self.resp, self.msg = red:get('frontend:' .. asset_name)
+      if getmetatable(self.resp) == nil then
+        self.resp = nil
+      end
+    end
     if not (self.resp) then
       self.status = 500
     end
-    if getmetatable(self.resp) == nil then
-      self.resp = nil
-    end
   elseif 'backends' == _exp_0 then
-    local rawdata
-    rawdata, self.msg = red:zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
-    local data = { }
-    self.resp = { }
-    do
-      local _tbl_0 = { }
-      for i, item in ipairs(rawdata) do
-        if i % 2 > 0 then
-          _tbl_0[item] = rawdata[i + 1]
+    if asset_name == nil then
+      local keys, err = red:keys('backend:*')
+      self.resp = { }
+      for _index_0 = 1, #keys do
+        local key = keys[_index_0]
+        local name = library.split(key, ':')
+        name = name[#name]
+        local rawdata = red:zrangebyscore(key, '-inf', '+inf', 'withscores')
+        local data
+        do
+          local _accum_0 = { }
+          local _len_0 = 1
+          for i, item in ipairs(rawdata) do
+            if i % 2 > 0 and item:sub(1, 1) ~= '_' then
+              _accum_0[_len_0] = item
+              _len_0 = _len_0 + 1
+            end
+          end
+          data = _accum_0
         end
+        table.insert(self.resp, 1, {
+          name = name,
+          servers = data
+        })
       end
-      data = _tbl_0
-    end
-    do
-      local _accum_0 = { }
-      local _len_0 = 1
-      for k, v in pairs(data) do
-        if k:sub(1, 1) ~= "_" then
-          _accum_0[_len_0] = k
-          _len_0 = _len_0 + 1
+    else
+      local rawdata
+      rawdata, self.msg = red:zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        for i, item in ipairs(rawdata) do
+          if i % 2 > 0 and item:sub(1, 1) ~= '_' then
+            _accum_0[_len_0] = item
+            _len_0 = _len_0 + 1
+          end
         end
+        self.resp = _accum_0
       end
-      self.resp = _accum_0
-    end
-    if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
-      self.resp = nil
+      if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
+        self.resp = nil
+      end
     end
   else
     self.status = 400

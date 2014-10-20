@@ -97,12 +97,7 @@ M.get_config = (@, asset_name, config) ->
 M.set_config = (@, asset_name, config, value) ->
     red = M.connect(@)
     return nil if red == nil
-    library.log(asset_name)
-    library.log(config)
-    library.log(value)
     ok, err = red\zadd('backend:' .. asset_name, value, '_' .. config)
-    library.log(ok)
-    library.log(err)
     if ok >= 0
         @status = 200
         @msg = "OK"
@@ -118,17 +113,33 @@ M.get_data = (@, asset_type, asset_name) ->
     return nil if red == nil
     switch asset_type
         when 'frontends'
-            @resp, @msg = red\get('frontend:' .. asset_name)
+            if asset_name == nil
+                @resp = {}
+                keys, err = red\keys('frontend:*')
+                for key in *keys
+                    url = library.split(key, ':')
+                    url = url[ #url ]
+                    backend_name = red\get(key)
+                    table.insert(@resp, 1, {url: url, backend_name: backend_name})
+            else
+                @resp, @msg = red\get('frontend:' .. asset_name)
+                if getmetatable(@resp) == nil
+                    @resp = nil
             @status = 500 unless @resp
-            if getmetatable(@resp) == nil
-                @resp = nil
         when 'backends'
-            rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
-            data = {}
-            @resp = {}
-            data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
-            @resp = [ k for k,v in pairs data when k\sub(1,1) != "_"]
-            @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
+            if asset_name == nil
+                keys, err = red\keys('backend:*')
+                @resp = {}
+                for key in *keys
+                    name = library.split(key, ':')
+                    name = name[ #name ]
+                    rawdata = red\zrangebyscore(key, '-inf', '+inf', 'withscores')
+                    data = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                    table.insert(@resp, 1, {name: name, servers: data})
+            else
+                rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+                @resp = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'

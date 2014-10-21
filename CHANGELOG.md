@@ -13,6 +13,9 @@ Changelog
 
 ## 1.2.0 (2014-10-14)
 
+### Backwards Incompatibility Note
+There is a significant database restructuring in this version of redx. If you're upgrading from a previous version, flush the db after updating.
+
 ### Feature
 + [PR](https://github.com/rstudio/redx/pulls): Add ability to probabilistically load balance backends based on their score value (most or least)
 

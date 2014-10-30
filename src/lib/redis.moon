@@ -77,7 +77,7 @@ M.flush = (@) ->
 M.get_config = (@, asset_name, config) ->
     red = M.connect(@)
     return nil if red == nil
-    config_value, @msg = red\zscore('backend:' .. asset_name, '_' .. config)
+    config_value, @msg = red\hget('backend:' .. asset_name, '_' .. config)
     if config_value == nil
         @resp = nil
     else
@@ -97,7 +97,7 @@ M.get_config = (@, asset_name, config) ->
 M.set_config = (@, asset_name, config, value) ->
     red = M.connect(@)
     return nil if red == nil
-    ok, err = red\zadd('backend:' .. asset_name, value, '_' .. config)
+    ok, err = red\hset('backend:' .. asset_name, '_' .. config, value)
     if ok >= 0
         @status = 200
         @msg = "OK"
@@ -133,11 +133,11 @@ M.get_data = (@, asset_type, asset_name) ->
                 for key in *keys
                     name = library.split(key, ':')
                     name = name[ #name ]
-                    rawdata = red\zrangebyscore(key, '-inf', '+inf', 'withscores')
+                    rawdata = red\hgetall(key)
                     data = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
                     table.insert(@resp, 1, {name: name, servers: data})
             else
-                rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+                rawdata, @msg = red\hgetall('backend:' .. asset_name)
                 @resp = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
                 @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
         else
@@ -169,7 +169,7 @@ M.save_data = (@, asset_type, asset_name, asset_value, score, overwrite=false) -
             red = M.connect(@)
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\zadd('backend:' .. asset_name, score, asset_value)
+            ok, err = red\hset('backend:' .. asset_name, asset_value, score)
             M.commit(@, red, "Failed to save backend: ") if overwrite
         else
             ok = false
@@ -196,7 +196,7 @@ M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
             if asset_value == nil
                 resp, @msg = red\del('backend:' .. asset_name)
             else
-                resp, @msg = red\zrem('backend:' .. asset_name, asset_value)
+                resp, @msg = red\hdel('backend:' .. asset_name, asset_value)
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'
@@ -230,7 +230,7 @@ M.save_batch_data = (@, data, overwrite=false) ->
                     library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
                     if config.default_score == nil
                         config.default_score = 0
-                    red\zadd('backend:' .. backend["name"], config.default_score, server)
+                    red\hset('backend:' .. backend["name"], server, config.default_score)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -251,7 +251,7 @@ M.delete_batch_data = (@, data) ->
                 for server in *backend['servers']
                     unless server == nil
                         library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-                        red\zrem('backend:' .. backend["name"], server)
+                        red\hdel('backend:' .. backend["name"], server)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -281,7 +281,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
 M.fetch_backend = (@, backend) ->
     red = M.connect(@)
     return { nil, nil } if red == nil
-    rawdata, err = red\zrangebyscore('backend:' .. backend, '-inf', '+inf', 'withscores')
+    rawdata, err = red\hgetall('backend:' .. backend)
     servers = {}
     configs = {}
     for i, item in ipairs rawdata

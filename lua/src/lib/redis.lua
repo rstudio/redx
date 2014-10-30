@@ -89,7 +89,7 @@ M.get_config = function(self, asset_name, config)
     return nil
   end
   local config_value
-  config_value, self.msg = red:zscore('backend:' .. asset_name, '_' .. config)
+  config_value, self.msg = red:hget('backend:' .. asset_name, '_' .. config)
   if config_value == nil then
     self.resp = nil
   else
@@ -120,7 +120,7 @@ M.set_config = function(self, asset_name, config, value)
   if red == nil then
     return nil
   end
-  local ok, err = red:zadd('backend:' .. asset_name, value, '_' .. config)
+  local ok, err = red:hset('backend:' .. asset_name, '_' .. config, value)
   if ok >= 0 then
     self.status = 200
     self.msg = "OK"
@@ -171,7 +171,7 @@ M.get_data = function(self, asset_type, asset_name)
         local key = keys[_index_0]
         local name = library.split(key, ':')
         name = name[#name]
-        local rawdata = red:zrangebyscore(key, '-inf', '+inf', 'withscores')
+        local rawdata = red:hgetall(key)
         local data
         do
           local _accum_0 = { }
@@ -191,7 +191,7 @@ M.get_data = function(self, asset_type, asset_name)
       end
     else
       local rawdata
-      rawdata, self.msg = red:zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
+      rawdata, self.msg = red:hgetall('backend:' .. asset_name)
       do
         local _accum_0 = { }
         local _len_0 = 1
@@ -254,7 +254,7 @@ M.save_data = function(self, asset_type, asset_name, asset_value, score, overwri
     if overwrite then
       red:del('backend:' .. asset_name)
     end
-    local ok, err = red:zadd('backend:' .. asset_name, score, asset_value)
+    local ok, err = red:hset('backend:' .. asset_name, asset_value, score)
     if overwrite then
       M.commit(self, red, "Failed to save backend: ")
     end
@@ -298,7 +298,7 @@ M.delete_data = function(self, asset_type, asset_name, asset_value)
       resp, self.msg = red:del('backend:' .. asset_name)
     else
       local resp
-      resp, self.msg = red:zrem('backend:' .. asset_name, asset_value)
+      resp, self.msg = red:hdel('backend:' .. asset_name, asset_value)
     end
   else
     self.status = 400
@@ -365,7 +365,7 @@ M.save_batch_data = function(self, data, overwrite)
           if config.default_score == nil then
             config.default_score = 0
           end
-          red:zadd('backend:' .. backend["name"], config.default_score, server)
+          red:hset('backend:' .. backend["name"], server, config.default_score)
         end
       end
     end
@@ -405,7 +405,7 @@ M.delete_batch_data = function(self, data)
           local server = _list_1[_index_1]
           if not (server == nil) then
             library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-            red:zrem('backend:' .. backend["name"], server)
+            red:hdel('backend:' .. backend["name"], server)
           end
         end
       end
@@ -459,7 +459,7 @@ M.fetch_backend = function(self, backend)
       nil
     }
   end
-  local rawdata, err = red:zrangebyscore('backend:' .. backend, '-inf', '+inf', 'withscores')
+  local rawdata, err = red:hgetall('backend:' .. backend)
   local servers = { }
   local configs = { }
   for i, item in ipairs(rawdata) do

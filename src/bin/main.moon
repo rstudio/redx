@@ -15,23 +15,62 @@ lapis_config.config "development", ->
 ngx.req.read_body!
 request_body = ngx.req.get_body_data!
 
-process_request = (@) ->
-    frontend = redis.fetch_frontend(@, config.max_path_length)
+process_request = (request) ->
+    frontend = redis.fetch_frontend(request, config.max_path_length)
     if frontend == nil
         ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "false")
     else
         ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
         ngx.req.set_header("X-Redx-Frontend-Name", frontend['frontend_key'])
         ngx.req.set_header("X-Redx-Backend-Name", frontend['backend_key'])
-        server = redis.fetch_server(@, frontend['backend_key'], false)
-        if server == nil
+        backend = redis.fetch_backend(request, frontend['backend_key'])
+        session = {
+            frontend: frontend['frontend_key'],
+            backend: frontend['backend_key'],
+            servers: backend[1],
+            config: backend[2],
+            server: nil
+        }
+        if session['servers'] == nil
             ngx.req.set_header("X-Redx-Backend-Cache-Hit", "false")
         else
-            ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
-            ngx.req.set_header("X-Redx-Backend-Server", server)
-            library.log("SERVER: " .. server)
-            ngx.req.set_body_data = request_body
-            ngx.var.upstream = server
+            -- run pre plugins
+            for plugin in *plugins
+                response = plugin['plugin']().pre(request, session, plugin['param'])
+                if response != nil
+                    return response
+
+            -- run balance plugins
+            for plugin in *plugins
+                session['servers'] = plugin['plugin']().balance(request, session, plugin['param'])
+                if type(session['servers']) == 'string'
+                    session['server'] = session['servers']
+                    break
+                elseif type(session['servers']['name']) == 'string'
+                    session['server'] = session['servers']['name']
+                    break
+                elseif #session['servers'] == 1
+                    session['server'] = session['servers'][1]['name']
+                    break
+                elseif session['servers'] == nil or #session['servers'] == 0
+                    -- all servers were filterd out, do not proxy
+                    session['server'] = nil
+                    break
+
+            -- run post plugin 
+            for plugin in *plugins
+                response = plugin['plugin']().post(request, session, plugin['param'])
+                if response != nil
+                    return response
+
+            if session['server'] != nil
+                ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")
+                ngx.req.set_header("X-Redx-Backend-Server", session['server'])
+                library.log("SERVER: " .. session['server'])
+                ngx.req.set_body_data = request_body
+                request_body = nil -- clear body from memory (GC)
+                ngx.var.upstream = session['server']
+    return layout: false
 
 webserver = class extends lapis.Application
     cookie_attributes: (name, value) =>
@@ -46,14 +85,12 @@ webserver = class extends lapis.Application
                     p = p .. "/#{v}"
         if p == ''
             p = '/'
-        "Max-Age=#{config.stickiness}; Path=#{p}; HttpOnly"
+        "Max-Age=#{config.session_length}; Path=#{p}; HttpOnly"
 
     '/': =>
         process_request(@)
-        layout: false
 
     default_route: =>
         process_request(@)
-        layout: false
 
 lapis.serve(webserver)

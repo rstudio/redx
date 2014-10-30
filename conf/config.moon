@@ -25,15 +25,13 @@ M.redis_keepalive_max_idle_timeout = 10000
 -- 3 = host.com/contact/us/now
 M.max_path_length = 1
 
--- Stickiness
--- Amount of time (in seconds) you wish the session to be sticky
--- Set to 0 if you want to disable stickiness
-M.stickiness = 0
+-- Session Length
+-- Amount of time (in seconds) you wish the session cookie to live
+M.session_length = 900
 
--- Load Balancing Algorithm
--- "random" or "least-score" or "most-score"
-M.balance_algorithm = 'random'
+-- Plugin list
+-- List of plugins to enable within redx. Plugins are executed in given order below
+M.plugins = { 'random' }
 
--- Default score value
 M.default_score = 0
 return M

@@ -87,4 +87,4 @@ describe "redx_main", ->
         json_body['backends'][1]['servers'] = { "rstudio.com:9844" }
         response, code, headers = make_json_request("/batch", "PUT", json_body)
         response, code, headers = make_request("/contact")
-        assert.same 502, code
+        assert.same "closed", code

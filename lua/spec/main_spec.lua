@@ -97,6 +97,6 @@ return describe("redx_main", function()
     }
     local response, code, headers = make_json_request("/batch", "PUT", json_body)
     response, code, headers = make_request("/contact")
-    return assert.same(502, code)
+    return assert.same("closed", code)
   end)
 end)

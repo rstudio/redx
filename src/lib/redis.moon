@@ -278,108 +278,22 @@ M.fetch_frontend = (@, max_path_length=3) ->
     library.log_err("Frontend Cache miss")
     return nil
 
-M.fetch_server = (@, backend_key) ->
-    if config.stickiness > 0
-        export backend_cookie = @session.backend
-    export upstream = nil
+M.fetch_backend = (@, backend) ->
     red = M.connect(@)
-    return nil if red == nil
-    if config.stickiness > 0 and backend_cookie != nil and backend_cookie != ''
-        resp, err = red\zscore('backend:' .. backend_key, backend_cookie)
-        if resp != "0"
-            -- clear cookie by setting to nil
-            @session.backend = nil
-            export upstream = nil
-        else
-            export upstream = backend_cookie
-    if upstream == nil
-        rawdata, err = red\zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
-        data = {}
-        data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
-        --split backends from config data
-        upstreams = {}
-        upstreams = [{ backend:k, score: tonumber(v)} for k,v in pairs data when k\sub(1,1) != "_"]
-        backend_config = {}
-        backend_config = {k,v for k,v in pairs data when k\sub(1,1) == "_"}
-        if #upstreams == 1
-            -- only one backend available
-            library.log_err('Only one backend, choosing it')
-            upstream = upstreams[1]['backend']
-        else
-            if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score'
-                -- get least/most connection probability
-                if #upstreams == 2
-                    -- get least/most connection probability relative to max score
-                    max_score = tonumber(backend_config['_max_score'])
-                    unless max_score == nil
-                        -- get total number of available score
-                        available_score = 0
-                        for x in *upstreams
-                            if config.balance_algorithm == 'least-score'
-                                available_score += (max_score - x['score'])
-                            else
-                                available_score += x['score']
-                        -- pick random number within total available score
-                        rand = math.random( 1, available_score )
-                        if config.balance_algorithm == 'least-score'
-                            if rand <= (max_score - upstreams[1]['score'])
-                                upstream = upstreams[1]['backend']
-                            else
-                                upstream = upstreams[2]['backend']
-                        else
-                            if rand <= (upstreams[1]['score'])
-                                upstream = upstreams[1]['backend']
-                            else
-                                upstream = upstreams[2]['backend']
-                            
-                else
-                    -- get least connection probability relative to larger score
-                    -- get largest and least number of score
-                    most_score = nil
-                    least_score = nil
-                    for up in *upstreams
-                        if most_score == nil or up['score'] > most_score
-                            most_score = up['score']
-                        if least_score == nil or up['score'] < least_score
-                            least_score = up['score']
-                    if config.balance_algorithm == 'least-score'
-                        export available_upstreams = [ up for up in *upstreams when up['score'] < most_score ]
-                    else
-                        export available_upstreams = [ up for up in *upstreams when up['score'] > least_score ]
-                    if #available_upstreams > 0
-                        available_score = 0 -- available score to match highest connection count
-                        for x in *available_upstreams
-                            if config.balance_algorithm == 'least-score'
-                                available_score += (most_score - x['score'])
-                            else
-                                available_score += x['score']
-                        rand = math.random( available_score )
-                        offset = 0
-                        for up in *available_upstreams
-                            value = 0
-                            if config.balance_algorithm == 'least-score'
-                                value = (most_score - up['score'])
-                            else
-                                value = up['score']
-                            if rand <= (value + offset)
-                                upstream = up['backend']
-                                break
-                            offset += value
-                if upstream == nil and #upstreams > 0
-                    -- if least-score fails to find a backend, fallback to pick one randomly
-                    upstream = upstreams[ math.random( #upstreams ) ]['backend']
+    return { nil, nil } if red == nil
+    rawdata, err = red\zrangebyscore('backend:' .. backend, '-inf', '+inf', 'withscores')
+    servers = {}
+    configs = {}
+    for i, item in ipairs rawdata
+        if i % 2 > 0
+            if item\sub(1,1) == '_'
+                config_name = string.sub(item, 2, -1)
+                configs[config_name] = rawdata[i+1]
             else
-                -- choose random upstream
-                upstream = upstreams[ math.random( #upstreams ) ]['backend']
+                server = { name: item, score: rawdata[i+1]}
+                table.insert(servers, server)
     M.finish(red)
-    if type(upstream) == 'string'
-        if config.stickiness > 0
-            -- update cookie
-            @session.backend = upstream
-        return upstream
-    else
-        library.log_err("Backend Cache miss: " .. backend_key)
-        return nil
+    return { servers, configs }
 
 M.orphans = (@) ->
     red = M.connect(@)

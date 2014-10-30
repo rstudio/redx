@@ -451,180 +451,36 @@ M.fetch_frontend = function(self, max_path_length)
   library.log_err("Frontend Cache miss")
   return nil
 end
-M.fetch_server = function(self, backend_key)
-  if config.stickiness > 0 then
-    backend_cookie = self.session.backend
-  end
-  upstream = nil
+M.fetch_backend = function(self, backend)
   local red = M.connect(self)
   if red == nil then
-    return nil
+    return {
+      nil,
+      nil
+    }
   end
-  if config.stickiness > 0 and backend_cookie ~= nil and backend_cookie ~= '' then
-    local resp, err = red:zscore('backend:' .. backend_key, backend_cookie)
-    if resp ~= "0" then
-      self.session.backend = nil
-      upstream = nil
-    else
-      upstream = backend_cookie
-    end
-  end
-  if upstream == nil then
-    local rawdata, err = red:zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
-    local data = { }
-    do
-      local _tbl_0 = { }
-      for i, item in ipairs(rawdata) do
-        if i % 2 > 0 then
-          _tbl_0[item] = rawdata[i + 1]
-        end
-      end
-      data = _tbl_0
-    end
-    local upstreams = { }
-    do
-      local _accum_0 = { }
-      local _len_0 = 1
-      for k, v in pairs(data) do
-        if k:sub(1, 1) ~= "_" then
-          _accum_0[_len_0] = {
-            backend = k,
-            score = tonumber(v)
-          }
-          _len_0 = _len_0 + 1
-        end
-      end
-      upstreams = _accum_0
-    end
-    local backend_config = { }
-    do
-      local _tbl_0 = { }
-      for k, v in pairs(data) do
-        if k:sub(1, 1) == "_" then
-          _tbl_0[k] = v
-        end
-      end
-      backend_config = _tbl_0
-    end
-    if #upstreams == 1 then
-      library.log_err('Only one backend, choosing it')
-      upstream = upstreams[1]['backend']
-    else
-      if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score' then
-        if #upstreams == 2 then
-          local max_score = tonumber(backend_config['_max_score'])
-          if not (max_score == nil) then
-            local available_score = 0
-            for _index_0 = 1, #upstreams do
-              local x = upstreams[_index_0]
-              if config.balance_algorithm == 'least-score' then
-                available_score = available_score + (max_score - x['score'])
-              else
-                available_score = available_score + x['score']
-              end
-            end
-            local rand = math.random(1, available_score)
-            if config.balance_algorithm == 'least-score' then
-              if rand <= (max_score - upstreams[1]['score']) then
-                upstream = upstreams[1]['backend']
-              else
-                upstream = upstreams[2]['backend']
-              end
-            else
-              if rand <= (upstreams[1]['score']) then
-                upstream = upstreams[1]['backend']
-              else
-                upstream = upstreams[2]['backend']
-              end
-            end
-          end
-        else
-          local most_score = nil
-          local least_score = nil
-          for _index_0 = 1, #upstreams do
-            local up = upstreams[_index_0]
-            if most_score == nil or up['score'] > most_score then
-              most_score = up['score']
-            end
-            if least_score == nil or up['score'] < least_score then
-              least_score = up['score']
-            end
-          end
-          if config.balance_algorithm == 'least-score' then
-            do
-              local _accum_0 = { }
-              local _len_0 = 1
-              for _index_0 = 1, #upstreams do
-                local up = upstreams[_index_0]
-                if up['score'] < most_score then
-                  _accum_0[_len_0] = up
-                  _len_0 = _len_0 + 1
-                end
-              end
-              available_upstreams = _accum_0
-            end
-          else
-            do
-              local _accum_0 = { }
-              local _len_0 = 1
-              for _index_0 = 1, #upstreams do
-                local up = upstreams[_index_0]
-                if up['score'] > least_score then
-                  _accum_0[_len_0] = up
-                  _len_0 = _len_0 + 1
-                end
-              end
-              available_upstreams = _accum_0
-            end
-          end
-          if #available_upstreams > 0 then
-            local available_score = 0
-            local _list_0 = available_upstreams
-            for _index_0 = 1, #_list_0 do
-              local x = _list_0[_index_0]
-              if config.balance_algorithm == 'least-score' then
-                available_score = available_score + (most_score - x['score'])
-              else
-                available_score = available_score + x['score']
-              end
-            end
-            local rand = math.random(available_score)
-            local offset = 0
-            local _list_1 = available_upstreams
-            for _index_0 = 1, #_list_1 do
-              local up = _list_1[_index_0]
-              local value = 0
-              if config.balance_algorithm == 'least-score' then
-                value = (most_score - up['score'])
-              else
-                value = up['score']
-              end
-              if rand <= (value + offset) then
-                upstream = up['backend']
-                break
-              end
-              offset = offset + value
-            end
-          end
-        end
-        if upstream == nil and #upstreams > 0 then
-          upstream = upstreams[math.random(#upstreams)]['backend']
-        end
+  local rawdata, err = red:zrangebyscore('backend:' .. backend, '-inf', '+inf', 'withscores')
+  local servers = { }
+  local configs = { }
+  for i, item in ipairs(rawdata) do
+    if i % 2 > 0 then
+      if item:sub(1, 1) == '_' then
+        local config_name = string.sub(item, 2, -1)
+        configs[config_name] = rawdata[i + 1]
       else
-        upstream = upstreams[math.random(#upstreams)]['backend']
+        local server = {
+          name = item,
+          score = rawdata[i + 1]
+        }
+        table.insert(servers, server)
       end
     end
   end
   M.finish(red)
-  if type(upstream) == 'string' then
-    if config.stickiness > 0 then
-      self.session.backend = upstream
-    end
-    return upstream
-  else
-    library.log_err("Backend Cache miss: " .. backend_key)
-    return nil
-  end
+  return {
+    servers,
+    configs
+  }
 end
 M.orphans = function(self)
   local red = M.connect(self)

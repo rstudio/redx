@@ -5,10 +5,10 @@ do
   escape_pattern = _obj_0.escape_pattern
 end
 M.log = function(msg)
-  return ngx.log(ngx.NOTICE, msg)
+  return ngx.log(ngx.NOTICE, inspect(msg))
 end
 M.log_err = function(msg)
-  return ngx.log(ngx.ERR, msg)
+  return ngx.log(ngx.ERR, inspect(msg))
 end
 M.split = function(str, delim)
   str = str .. delim

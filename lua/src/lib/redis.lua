@@ -172,7 +172,7 @@ M.get_data = function(self, asset_type, asset_name)
         local name = library.split(key, ':')
         name = name[#name]
         local rawdata = red:hgetall(key)
-        local data
+        local servers
         do
           local _accum_0 = { }
           local _len_0 = 1
@@ -182,16 +182,28 @@ M.get_data = function(self, asset_type, asset_name)
               _len_0 = _len_0 + 1
             end
           end
-          data = _accum_0
+          servers = _accum_0
+        end
+        local configs
+        do
+          local _tbl_0 = { }
+          for i, item in ipairs(rawdata) do
+            if i % 2 > 0 and item:sub(1, 1) == '_' then
+              _tbl_0[string.sub(item, 2, -1)] = rawdata[i + 1]
+            end
+          end
+          configs = _tbl_0
         end
         table.insert(self.resp, 1, {
           name = name,
-          servers = data
+          servers = servers,
+          config = configs
         })
       end
     else
       local rawdata
       rawdata, self.msg = red:hgetall('backend:' .. asset_name)
+      local servers
       do
         local _accum_0 = { }
         local _len_0 = 1
@@ -201,10 +213,25 @@ M.get_data = function(self, asset_type, asset_name)
             _len_0 = _len_0 + 1
           end
         end
-        self.resp = _accum_0
+        servers = _accum_0
       end
-      if type(self.resp) == 'table' and table.getn(self.resp) == 0 then
+      local configs
+      do
+        local _tbl_0 = { }
+        for i, item in ipairs(rawdata) do
+          if i % 2 > 0 and item:sub(1, 1) == '_' then
+            _tbl_0[string.sub(item, 2, -1)] = rawdata[i + 1]
+          end
+        end
+        configs = _tbl_0
+      end
+      if #rawdata == 0 then
         self.resp = nil
+      else
+        self.resp = {
+          servers = servers,
+          config = configs
+        }
       end
     end
   else
@@ -374,8 +401,8 @@ M.save_batch_data = function(self, data, overwrite)
         end
       end
       if backend['config'] then
-        for k, v in ipairs(backend['config']) do
-          red:hset('backend:' .. backend["name"], k, v)
+        for k, v in pairs(backend['config']) do
+          red:hset('backend:' .. backend["name"], "_" .. k, v)
         end
       end
     end

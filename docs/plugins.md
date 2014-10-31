@@ -8,7 +8,7 @@ Its executed after the frontend and backend information has been acquired, but b
 Each plugin is next executed while trying to find the server to proxy the request to. This is where you'd want to inject your own load balancing algorthm if you choose. When picking the server, a list of all available servers are passed to the first plugin. That plugin returns a list of still available servers (it may filter no servers from the list, one or two, or all but one). This new list is then passed to the next plugin until there is only one server left.
 For an example, say you had a backend with 5 servers. The first plugin is load balancing based on least connections. Two of the servers are tied with least number of connections of 10 connections. Those two servers are then passed to the second plugin which is called "random". This plugin gets those two servers, picks a random one, that becomes the server we proxy to. By daisy-chaining multiple plugins together you can get a very flexible means to load balance. 
 
-Then, after a server has been picked to proxy to, each plugin is run again to do any actions it wants. An example of this may be to write the server to a cookie for stickiness, or collect metrics.
+Then, after a server has been picked to proxy to, each plugin is run again to do any actions it wants. An example of this may be to write the server to a cookie for stickiness, collect metrics, or add custom headers to the request.
 
 Develop Plugins
 ===============

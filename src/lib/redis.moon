@@ -134,12 +134,17 @@ M.get_data = (@, asset_type, asset_name) ->
                     name = library.split(key, ':')
                     name = name[ #name ]
                     rawdata = red\hgetall(key)
-                    data = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
-                    table.insert(@resp, 1, {name: name, servers: data})
+                    servers = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                    configs = { string.sub(item, 2, -1), rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) == '_'}
+                    table.insert(@resp, 1, {name: name, servers: servers, config: configs})
             else
                 rawdata, @msg = red\hgetall('backend:' .. asset_name)
-                @resp = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
-                @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
+                servers = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                configs = { string.sub(item, 2, -1), rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) == '_'}
+                if #rawdata == 0
+                    @resp = nil
+                else
+                    @resp = { servers: servers, config: configs }
         else
             @status = 400
             @msg = 'Bad asset type. Must be "frontends" or "backends"'
@@ -236,8 +241,8 @@ M.save_batch_data = (@, data, overwrite=false) ->
                         else
                             red\hset('backend:' .. backend["name"], server[1], server[2])
             if backend['config']
-                for k,v in ipairs backend['config']
-                    red\hset('backend:' .. backend["name"], k, v)
+                for k,v in pairs backend['config']
+                    red\hset('backend:' .. backend["name"], "_" .. k, v)
                         
     M.commit(@, red, "failed to save data: ")
     M.finish(red)

@@ -112,7 +112,10 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80'
+        servers = {
+          'rstudio.com:80'
+        },
+        config = { }
       }
     })
   end)
@@ -135,8 +138,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('cran.rstudio.org:80')), "PUT")
@@ -146,7 +152,10 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'cran.rstudio.org:80'
+        servers = {
+          'cran.rstudio.org:80'
+        },
+        config = { }
       }
     })
   end)
@@ -167,8 +176,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "DELETE")
@@ -178,7 +190,10 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'shinyapps.io:80'
+        servers = {
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
   end)
@@ -195,8 +210,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555", "DELETE")
@@ -220,11 +238,24 @@ return describe("redx_api", function()
     if response['data'] then
       table.sort(response['data'])
     end
+    assert.same(response, {
+      message = "OK",
+      data = {
+        servers = {
+          "menloparkmuseum.org",
+          "tesc.edu"
+        },
+        config = {
+          person = "Thomas Edison"
+        }
+      }
+    })
+    response, code, headers = make_json_request("/backends/menlobackend/config/person")
+    assert.same(200, code)
     return assert.same(response, {
       message = "OK",
       data = {
-        "menloparkmuseum.org",
-        "tesc.edu"
+        person = "Thomas Edison"
       }
     })
   end)
@@ -243,8 +274,13 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        "menloparkmuseum.org",
-        "tesc.edu"
+        servers = {
+          "menloparkmuseum.org",
+          "tesc.edu"
+        },
+        config = {
+          person = "Thomas Edison"
+        }
       }
     })
     local temp_json_body = json_body
@@ -260,7 +296,10 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/" .. tostring(escape(temp_json_body['backends'][1]['name'])))
     assert.same(200, code)
     return assert.same(response['data'], {
-      'apple.com'
+      servers = {
+        'apple.com'
+      },
+      config = { }
     })
   end)
   it("should flush db #flush_api", function()
@@ -271,7 +310,10 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80'
+        servers = {
+          'rstudio.com:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/flush", "DELETE")

@@ -352,20 +352,30 @@ M.save_batch_data = function(self, data, overwrite)
       if overwrite then
         red:del('backend:' .. backend["name"])
       end
-      if not (type(backend['servers']) == 'table') then
-        backend['servers'] = {
-          backend['servers']
-        }
-      end
-      local _list_1 = backend['servers']
-      for _index_1 = 1, #_list_1 do
-        local server = _list_1[_index_1]
-        if not (server == nil) then
-          library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-          if config.default_score == nil then
-            config.default_score = 0
+      if backend['servers'] then
+        if not (type(backend['servers']) == 'table') then
+          backend['servers'] = {
+            backend['servers']
+          }
+        end
+        local _list_1 = backend['servers']
+        for _index_1 = 1, #_list_1 do
+          local server = _list_1[_index_1]
+          if not (server == nil) then
+            if type(server) == 'string' then
+              if config.default_score == nil then
+                config.default_score = 0
+              end
+              red:hset('backend:' .. backend["name"], server, config.default_score)
+            else
+              red:hset('backend:' .. backend["name"], server[1], server[2])
+            end
           end
-          red:hset('backend:' .. backend["name"], server, config.default_score)
+        end
+      end
+      if backend['config'] then
+        for k, v in ipairs(backend['config']) do
+          red:hset('backend:' .. backend["name"], k, v)
         end
       end
     end
@@ -391,7 +401,7 @@ M.delete_batch_data = function(self, data)
     local _list_0 = data['backends']
     for _index_0 = 1, #_list_0 do
       local backend = _list_0[_index_0]
-      if backend['servers'] == nil then
+      if backend['servers'] == nil and backend['config'] == nil then
         red:del('backend:' .. backend["name"])
       end
       if backend['servers'] then
@@ -407,6 +417,12 @@ M.delete_batch_data = function(self, data)
             library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
             red:hdel('backend:' .. backend["name"], server)
           end
+        end
+      end
+      if backend['config'] then
+        for k, v in ipairs(backend['config']) do
+          library.log('deleting backend config: ' .. backend["name"] .. ' ' .. k)
+          red:hdel('backend:' .. backend["name"], k)
         end
       end
     end

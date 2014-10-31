@@ -11,7 +11,7 @@ end
 inspect = require("inspect")
 http = require("socket.http")
 ltn12 = require("ltn12")
-json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                "duckduckgo.com:80",\n                "google.com:80"\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ]\n        }\n    ]\n}')
+json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                ["duckduckgo.com:80", 10],\n                ["google.com:80", 30]\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ],\n            "config": {\n                "person": "Thomas Edison"\n            }\n        }\n    ]\n}')
 local table_length
 table_length = function(t)
   local count = 0

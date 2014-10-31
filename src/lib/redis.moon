@@ -224,13 +224,21 @@ M.save_batch_data = (@, data, overwrite=false) ->
         for backend in *data['backends'] do
             red\del('backend:' .. backend["name"]) if overwrite
             -- ensure servers are a table
-            backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
-            for server in *backend['servers']
-                unless server == nil
-                    library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-                    if config.default_score == nil
-                        config.default_score = 0
-                    red\hset('backend:' .. backend["name"], server, config.default_score)
+            if backend['servers']
+                backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
+                for server in *backend['servers']
+                    unless server == nil
+                        if type(server) == 'string'
+                            -- supporting just string values so we can be backwards compatible with the API
+                            if config.default_score == nil
+                                config.default_score = 0
+                            red\hset('backend:' .. backend["name"], server, config.default_score)
+                        else
+                            red\hset('backend:' .. backend["name"], server[1], server[2])
+            if backend['config']
+                for k,v in ipairs backend['config']
+                    red\hset('backend:' .. backend["name"], k, v)
+                        
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 
@@ -244,7 +252,7 @@ M.delete_batch_data = (@, data) ->
             red\del('frontend:' .. frontend['url'])
     if data["backends"]
         for backend in *data['backends'] do
-            red\del('backend:' .. backend["name"]) if backend['servers'] == nil
+            red\del('backend:' .. backend["name"]) if backend['servers'] == nil and backend['config'] == nil
             if backend['servers']
                 -- ensure servers are a table
                 backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
@@ -252,6 +260,10 @@ M.delete_batch_data = (@, data) ->
                     unless server == nil
                         library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
                         red\hdel('backend:' .. backend["name"], server)
+            if backend['config']
+                for k,v in ipairs backend['config']
+                    library.log('deleting backend config: ' .. backend["name"] .. ' ' .. k)
+                    red\hdel('backend:' .. backend["name"], k)
     M.commit(@, red, "failed to save data: ")
     M.finish(red)
 

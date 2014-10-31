@@ -20,8 +20,8 @@ export json_body = from_json('{
         {
             "name": "12345",
             "servers": [
-                "duckduckgo.com:80",
-                "google.com:80"
+                ["duckduckgo.com:80", 10],
+                ["google.com:80", 30]
             ]
         },
         {
@@ -29,7 +29,10 @@ export json_body = from_json('{
             "servers": [
                 "menloparkmuseum.org",
                 "tesc.edu"
-            ]
+            ],
+            "config": {
+                "person": "Thomas Edison"
+            }
         }
     ]
 }')

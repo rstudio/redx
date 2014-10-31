@@ -9,7 +9,7 @@ M.pre = (request, session, param) ->
 
 M.balance = (request, session, param) ->
     for server in *session['servers']
-        if request.session.backend == server['name']
+        if request.session.backend == server['address']
             return server
     return session['servers']
 

@@ -290,7 +290,7 @@ M.fetch_backend = (@, backend) ->
                 config_name = string.sub(item, 2, -1)
                 configs[config_name] = rawdata[i+1]
             else
-                server = { name: item, score: rawdata[i+1]}
+                server = { address: item, score: tonumber(rawdata[i+1])}
                 table.insert(servers, server)
     M.finish(red)
     return { servers, configs }

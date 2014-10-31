@@ -45,11 +45,11 @@ process_request = function(request)
         if type(session['servers']) == 'string' then
           session['server'] = session['servers']
           break
-        elseif type(session['servers']['name']) == 'string' then
-          session['server'] = session['servers']['name']
+        elseif type(session['servers']['address']) == 'string' then
+          session['server'] = session['servers']['address']
           break
         elseif #session['servers'] == 1 then
-          session['server'] = session['servers'][1]['name']
+          session['server'] = session['servers'][1]['address']
           break
         elseif session['servers'] == nil or #session['servers'] == 0 then
           session['server'] = nil

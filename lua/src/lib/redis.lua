@@ -469,8 +469,8 @@ M.fetch_backend = function(self, backend)
         configs[config_name] = rawdata[i + 1]
       else
         local server = {
-          name = item,
-          score = rawdata[i + 1]
+          address = item,
+          score = tonumber(rawdata[i + 1])
         }
         table.insert(servers, server)
       end

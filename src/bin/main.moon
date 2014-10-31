@@ -46,11 +46,11 @@ process_request = (request) ->
                 if type(session['servers']) == 'string'
                     session['server'] = session['servers']
                     break
-                elseif type(session['servers']['name']) == 'string'
-                    session['server'] = session['servers']['name']
+                elseif type(session['servers']['address']) == 'string'
+                    session['server'] = session['servers']['address']
                     break
                 elseif #session['servers'] == 1
-                    session['server'] = session['servers'][1]['name']
+                    session['server'] = session['servers'][1]['address']
                     break
                 elseif session['servers'] == nil or #session['servers'] == 0
                     -- all servers were filterd out, do not proxy

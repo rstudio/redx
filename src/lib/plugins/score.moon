@@ -6,9 +6,6 @@
 
 M = {}
 
-M.pre = (request, session, param) ->
-    return nil
-
 M.balance = (request, session, param) ->
     servers = session['servers']
     return servers if param != 'least' and param != 'most'
@@ -26,8 +23,5 @@ M.balance = (request, session, param) ->
             upstreams = {server}
             score = server['score']
     return upstreams
-
-M.post = (request, session, param) ->
-    return nil
 
 return M

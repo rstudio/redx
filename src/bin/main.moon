@@ -36,32 +36,35 @@ process_request = (request) ->
         else
             -- run pre plugins
             for plugin in *plugins
-                response = plugin['plugin']().pre(request, session, plugin['param'])
-                if response != nil
-                    return response
+                if (plugin['plugin']().pre)
+                    response = plugin['plugin']().pre(request, session, plugin['param'])
+                    if response != nil
+                        return response
 
             -- run balance plugins
             for plugin in *plugins
-                session['servers'] = plugin['plugin']().balance(request, session, plugin['param'])
-                if type(session['servers']) == 'string'
-                    session['server'] = session['servers']
-                    break
-                elseif type(session['servers']['address']) == 'string'
-                    session['server'] = session['servers']['address']
-                    break
-                elseif #session['servers'] == 1
-                    session['server'] = session['servers'][1]['address']
-                    break
-                elseif session['servers'] == nil or #session['servers'] == 0
-                    -- all servers were filterd out, do not proxy
-                    session['server'] = nil
-                    break
+                if (plugin['plugin']().balance)
+                    session['servers'] = plugin['plugin']().balance(request, session, plugin['param'])
+                    if type(session['servers']) == 'string'
+                        session['server'] = session['servers']
+                        break
+                    elseif type(session['servers']['address']) == 'string'
+                        session['server'] = session['servers']['address']
+                        break
+                    elseif #session['servers'] == 1
+                        session['server'] = session['servers'][1]['address']
+                        break
+                    elseif session['servers'] == nil or #session['servers'] == 0
+                        -- all servers were filterd out, do not proxy
+                        session['server'] = nil
+                        break
 
             -- run post plugin 
             for plugin in *plugins
-                response = plugin['plugin']().post(request, session, plugin['param'])
-                if response != nil
-                    return response
+                if (plugin['plugin']().post)
+                    response = plugin['plugin']().post(request, session, plugin['param'])
+                    if response != nil
+                        return response
 
             if session['server'] != nil
                 ngx.req.set_header("X-Redx-Backend-Cache-Hit", "true")

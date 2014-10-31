@@ -4,9 +4,6 @@
 
 M = {}
 
-M.pre = (request, session, param) ->
-    return nil
-
 M.balance = (request, session, param) ->
     for server in *session['servers']
         if request.session.backend == server['address']

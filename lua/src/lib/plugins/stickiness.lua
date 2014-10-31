@@ -1,7 +1,4 @@
 local M = { }
-M.pre = function(request, session, param)
-  return nil
-end
 M.balance = function(request, session, param)
   local _list_0 = session['servers']
   for _index_0 = 1, #_list_0 do

@@ -13,7 +13,7 @@ Then, after a server has been picked to proxy to, each plugin is run again to do
 Develop Plugins
 ===============
 
-There are three functions your plugin **must** support, `pre, `balance`, `post`. Each of these methods are passed the request object, the session data, and the parameter (as configured in your configuration file)
+There are three functions your plugin can support (all are optional), `pre, `balance`, `post`. Each of these methods are passed the request object, the session data, and the parameter (as configured in your configuration file)
 
 ### Request Object
 The request object is the lapis session that stores all sorts of information about [the request](http://leafo.net/lapis/reference/actions.html#request-object).
@@ -34,17 +34,8 @@ The `pre` function is run after the frontend and backend is pulled from redis, b
 
 Also, by using [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), you can redirect them to a custom page (ie 403 unauthorized page, or login portal).
 
-If you wish the method to do nothing, just return nil.
-```return nil```
-
 ## Balance
 The `balance` function is run to figure out which server in the backend to proxy the request to. Multiple plugins can be used in a "daisy-chain" kind of way. Each plugin is run with the list of available servers and should return a list of remaining available servers. 
 
-If you wish the balance function to do nothing, just return the list of server you received
-``` return session['servers']```
-
 ## Post
 The `post` function is run after a server has been chosen to proxy the request to. This can be used to do things as write the server to a cookie for stickiness, send metric data to a service, server level rate limiting, etc.
-
-If you wish the method to do nothig, just return nil.
-```return nil```

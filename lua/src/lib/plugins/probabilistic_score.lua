@@ -1,7 +1,4 @@
 local M = { }
-M.pre = function(request, session, param)
-  return nil
-end
 M.balance = function(request, session, param)
   local servers = session['servers']
   if param ~= 'least' and param ~= 'most' then
@@ -110,9 +107,6 @@ M.balance = function(request, session, param)
       return servers
     end
   end
-end
-M.post = function(request, session, param)
-  return nil
 end
 M.same_scores = function(servers)
   for i, s in ipairs(servers) do

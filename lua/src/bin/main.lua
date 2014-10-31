@@ -33,35 +33,41 @@ process_request = function(request)
       local _list_0 = plugins
       for _index_0 = 1, #_list_0 do
         local plugin = _list_0[_index_0]
-        local response = plugin['plugin']().pre(request, session, plugin['param'])
-        if response ~= nil then
-          return response
+        if (plugin['plugin']().pre) then
+          local response = plugin['plugin']().pre(request, session, plugin['param'])
+          if response ~= nil then
+            return response
+          end
         end
       end
       local _list_1 = plugins
       for _index_0 = 1, #_list_1 do
         local plugin = _list_1[_index_0]
-        session['servers'] = plugin['plugin']().balance(request, session, plugin['param'])
-        if type(session['servers']) == 'string' then
-          session['server'] = session['servers']
-          break
-        elseif type(session['servers']['address']) == 'string' then
-          session['server'] = session['servers']['address']
-          break
-        elseif #session['servers'] == 1 then
-          session['server'] = session['servers'][1]['address']
-          break
-        elseif session['servers'] == nil or #session['servers'] == 0 then
-          session['server'] = nil
-          break
+        if (plugin['plugin']().balance) then
+          session['servers'] = plugin['plugin']().balance(request, session, plugin['param'])
+          if type(session['servers']) == 'string' then
+            session['server'] = session['servers']
+            break
+          elseif type(session['servers']['address']) == 'string' then
+            session['server'] = session['servers']['address']
+            break
+          elseif #session['servers'] == 1 then
+            session['server'] = session['servers'][1]['address']
+            break
+          elseif session['servers'] == nil or #session['servers'] == 0 then
+            session['server'] = nil
+            break
+          end
         end
       end
       local _list_2 = plugins
       for _index_0 = 1, #_list_2 do
         local plugin = _list_2[_index_0]
-        local response = plugin['plugin']().post(request, session, plugin['param'])
-        if response ~= nil then
-          return response
+        if (plugin['plugin']().post) then
+          local response = plugin['plugin']().post(request, session, plugin['param'])
+          if response ~= nil then
+            return response
+          end
         end
       end
       if session['server'] ~= nil then

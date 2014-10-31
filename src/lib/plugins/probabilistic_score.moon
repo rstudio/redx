@@ -17,9 +17,6 @@
 
 M = {}
 
-M.pre = (request, session, param) ->
-    return nil
-
 M.balance = (request, session, param) ->
     servers = session['servers']
 
@@ -96,9 +93,6 @@ M.balance = (request, session, param) ->
             -- all servers have the same score it seems
             return servers
         
-M.post = (request, session, param) ->
-    return nil
-
 M.same_scores = (servers) ->
     -- check if all scores are equal to each other
     for i, s in ipairs servers

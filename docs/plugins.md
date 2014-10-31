@@ -1,16 +1,28 @@
 Plugins
 =======
 
-Plugins allow people to expand redx capabilities. There are three functions your plugin **must** support, `pre, `balance`, `post`. Each of these methods are passed the request object, the session data, and the parameter (as configured in your configuration file)
+Plugins allow redx to be extended in all sorts of ways. This can anywhere from custom load balncing algorthms, authorization, rate limiting, metrics collection, etc. Each plugin is actually executed three times at different points of the request. 
+
+Its executed after the frontend and backend information has been acquired, but before the load balancing algorthm has been run. This is good for stuff like rate limiting, authorization, or reject requests that don't contain the proper header or cookie. 
+
+Each plugin is next executed while trying to find the server to proxy the request to. This is where you'd want to inject your own load balancing algorthm if you choose. When picking the server, a list of all available servers are passed to the first plugin. That plugin returns a list of still available servers (it may filter no servers from the list, one or two, or all but one). This new list is then passed to the next plugin until there is only one server left.
+For an example, say you had a backend with 5 servers. The first plugin is load balancing based on least connections. Two of the servers are tied with least number of connections of 10 connections. Those two servers are then passed to the second plugin which is called "random". This plugin gets those two servers, picks a random one, that becomes the server we proxy to. By daisy-chaining multiple plugins together you can get a very flexible means to load balance. 
+
+Then, after a server has been picked to proxy to, each plugin is run again to do any actions it wants. An example of this may be to write the server to a cookie for stickiness, or collect metrics.
+
+Develop Plugins
+===============
+
+There are three functions your plugin **must** support, `pre, `balance`, `post`. Each of these methods are passed the request object, the session data, and the parameter (as configured in your configuration file)
 
 ### Request Object
 The request object is the lapis session that stores all sorts of information about [the request](http://leafo.net/lapis/reference/actions.html#request-object).
 
 ### Session Data
 Session data is information about the request that redx has generated. It is a table variable type (dictionary) that contains the follow key values
- * **frontend** - the frontend key used
- * **backend** - the backend key used
- * **servers** - list of servers available for this backend
+ * **frontend** - the frontend used
+ * **backend** - the backend used
+ * **servers** - list of servers available for this backend and their scores
  * **config** - a dictionary of configs set for this backend
  * **server** - The server choosen to proxy the request to
 
@@ -22,17 +34,13 @@ The `pre` function is run after the frontend and backend is pulled from redis, b
 
 Also, by using [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), you can redirect them to a custom page (ie 403 unauthorized page, or login portal).
 
-If you wish the method to do nothig, just return nil.
+If you wish the method to do nothing, just return nil.
 ```return nil```
 
 ## Balance
 The `balance` function is run to figure out which server in the backend to proxy the request to. Multiple plugins can be used in a "daisy-chain" kind of way. Each plugin is run with the list of available servers and should return a list of remaining available servers. 
 
-For example, say you have two plugins enabled, `score` and `random`. The `score` plugin is configured in your configuration file to behave in a `least-score` manner (in oppose to `most-score`). The score value can be whatever you want, number of connections, CPU utilization, number of threads that server is using, etc. In our case, lets assume its number of connections. 
-Say a request comes in a backend, and 1 server has 30 connections, while the other 2 servers have 10 connections each. The `score` plugin will receive all three servers as input, and it will return the 2 servers with 10 connections. Then, the `random` plugin recieve the output of the `score` plugin (ie those 2 servers) and picks a random one and returns 1 server. That server is then used to proxy the request.
-It is always a good idea to enable `random` as the last plugin, as a "catch all" in case you have gone through all other plugins and were not able to filter down to a single server.
-
-If you wish the balance function to do thing, just return the list of server you recieved
+If you wish the balance function to do nothing, just return the list of server you received
 ``` return session['servers']```
 
 ## Post

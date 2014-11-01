@@ -11,9 +11,8 @@ M.balance = (request, session, param) ->
     return session['servers']
 
 M.post = (request, session, param) ->
-    if session['server'] != nil
+    if session['server']
         -- update cookie
         request.session.backend = session['server']
-    return nil
 
 return M

@@ -10,8 +10,7 @@ M.balance = (request, session, param) ->
     servers = session['servers']
     return servers if param != 'least' and param != 'most'
 
-    upstreams = {}
-    score = 0
+    upstreams, score = {}, 0
     for server in *servers
         if #upstreams == 0 or score == server['score']
             table.insert(upstreams, server)

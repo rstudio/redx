@@ -13,8 +13,6 @@ M.pre = (request, session, param) ->
     -- return nil (or nothing at all) if you want to continue processing the request
     if session['frontend'] == session['backend']
         return status: 500, render: "The frontend is the backend, that makes no sense"
-    else
-        return nil
 
 M.balance = (request, session, param) ->
     -- processes the list of available servers to reduce or pick the servers you want to proxy to
@@ -31,8 +29,7 @@ M.post = (request, session, param) ->
     -- so you can write something to a cookie, or save the info to a db or whatever
     -- server will be nil if none was picked
     -- Similar to pre, if you return a table, it will be used to halt the request
-    if session['server'] != nil
+    if session['server']
         request.session.server = session['server']
-    return nil
 
 return M  -- required

@@ -10,9 +10,8 @@ M.balance = function(request, session, param)
   return session['servers']
 end
 M.post = function(request, session, param)
-  if session['server'] ~= nil then
+  if session['server'] then
     request.session.backend = session['server']
   end
-  return nil
 end
 return M

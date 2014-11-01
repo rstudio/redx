@@ -2,6 +2,7 @@ local M = { }
 M.balance = function(request, session, param)
   local servers = session['servers']
   if param ~= 'least' and param ~= 'most' then
+    library.log_err("Weighted score requires a parameter or 'least' or 'most")
     return servers
   end
   if M.same_scores(servers) then
@@ -20,10 +21,9 @@ M.balance = function(request, session, param)
     for _index_0 = 1, #servers do
       local x = servers[_index_0]
       if param == 'least' then
-        available_score = available_score + (max_score - x['score'])
-      else
-        available_score = available_score + x['score']
+        x['score'] = most_score - x['score']
       end
+      available_score = available_score + x['score']
     end
     local rand = math.random(1, available_score)
     if param == 'least' then
@@ -37,9 +37,7 @@ M.balance = function(request, session, param)
       return servers[2]
     end
   else
-    local most_score = nil
-    local least_score = nil
-    local available_upstreams = { }
+    local most_score, least_score, available_upstreams = nil, nil, { }
     for _index_0 = 1, #servers do
       local s = servers[_index_0]
       if most_score == nil or s['score'] > most_score then
@@ -81,26 +79,23 @@ M.balance = function(request, session, param)
       for _index_0 = 1, #available_upstreams do
         local x = available_upstreams[_index_0]
         if param == 'least' then
-          available_score = available_score + (most_score - x['score'])
-        else
-          available_score = available_score + x['score']
+          x['score'] = most_score - x['score']
         end
+        available_score = available_score + x['score']
       end
       local rand = math.random(available_score)
       local offset = 0
       for _index_0 = 1, #available_upstreams do
         local x = available_upstreams[_index_0]
         if param == 'least' then
-          local value = (most_score - x['score'])
-        else
-          local value = x['score']
+          x['score'] = (most_score - x['score'])
         end
-        if rand <= (value + offset) then
+        if rand <= (x['score'] + offset) then
           return {
             x
           }
         end
-        offset = offset + value
+        offset = offset + x['score']
       end
       return servers
     else

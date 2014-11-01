@@ -5,8 +5,6 @@ M.pre = function(request, session, param)
       status = 500,
       render = "The frontend is the backend, that makes no sense"
     }
-  else
-    return nil
   end
 end
 M.balance = function(request, session, param)
@@ -20,9 +18,8 @@ M.balance = function(request, session, param)
   return session['server']
 end
 M.post = function(request, session, param)
-  if session['server'] ~= nil then
+  if session['server'] then
     request.session.server = session['server']
   end
-  return nil
 end
 return M

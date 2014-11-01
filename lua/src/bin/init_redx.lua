@@ -5,20 +5,18 @@ inspect = require('inspect')
 socket = require('socket')
 plugins = { }
 for i, plugin in ipairs(config.plugins) do
-  local name = nil
-  local param = nil
+  local name, param = nil, nil
   if type(plugin) == 'string' then
     name = plugin
   else
-    name = plugin[1]
-    param = plugin[2]
+    name, param = plugin[1], plugin[2]
   end
-  local str = "return require('" .. name .. "')"
+  local require_string = "return require('" .. name .. "')"
   library.log("Loading plugin: " .. name)
   plugins[i] = {
     name = name,
     param = param,
-    plugin = loadstring(str)
+    plugin = loadstring(require_string)
   }
 end
 math.randomseed(socket.gettime() * 1000)

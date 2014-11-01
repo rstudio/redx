@@ -4,8 +4,7 @@ M.balance = function(request, session, param)
   if param ~= 'least' and param ~= 'most' then
     return servers
   end
-  local upstreams = { }
-  local score = 0
+  local upstreams, score = { }, 0
   for _index_0 = 1, #servers do
     local server = servers[_index_0]
     if #upstreams == 0 or score == server['score'] then

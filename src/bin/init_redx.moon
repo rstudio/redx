@@ -8,19 +8,17 @@ export plugins = {}
 
 -- load plugins
 for i, plugin in ipairs config.plugins
-    name = nil
-    param = nil
+    name, param = nil, nil
     if type(plugin) == 'string'
         name = plugin
     else
-        name = plugin[1]
-        param = plugin[2]
-    str = "return require('" .. name .. "')"
+        name, param = plugin[1], plugin[2]
+    require_string = "return require('" .. name .. "')"
     library.log("Loading plugin: " .. name)
     plugins[i] = {
         name: name,
         param: param,
-        plugin: loadstring(str)
+        plugin: loadstring(require_string)
     }
 
 -- seed math.random

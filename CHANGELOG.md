@@ -1,6 +1,18 @@
 Changelog
 =========
 
+## 2.0 (2014-11-1)
+
+### Features
++ [PR](https://github.com/rstudio/redx/pull/7): Plugin-support
++ Code optimizations and refactoring
++ Switched redis database to use hashes instead of sorted sets
++ `/batch` now supports backend configs and score values
++ Add support for a max\_path\_length of zero (only frontends with domain only, no path)
+
+### Backwards Incompatibility Note
+There is a significant database restructuring in this version of redx. If you're upgrading from a previous version, flush the db after updating.
+
 ## 1.3.0 (2014-10-20)
 
 ### Feature

@@ -517,7 +517,12 @@ M.fetch_frontend = function(self, max_path_length)
   end
   local path = self.req.parsed_url['path']
   local host = self.req.parsed_url['host']
-  local keys, frontends, p, count = { }, { }, '', 0
+  local keys, frontends = {
+    'frontend:' .. host
+  }, {
+    host
+  }
+  local p, count = '', 0
   for k, v in pairs(library.split(path, '/')) do
     if not (v == nil or v == '') then
       if count < (max_path_length) then

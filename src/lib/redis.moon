@@ -225,7 +225,8 @@ M.delete_batch_data = (data) ->
 M.fetch_frontend = (@, max_path_length=3) ->
     path = @req.parsed_url['path']
     host = @req.parsed_url['host']
-    keys, frontends, p, count = {}, {}, '', 0
+    keys, frontends = {'frontend:' .. host}, {host}
+    p, count = '', 0
     for k,v in pairs library.split(path, '/')
         unless v == nil or v == ''
             if count < (max_path_length)

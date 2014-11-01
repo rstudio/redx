@@ -80,11 +80,11 @@ The pool size of keepalive connections to maintain, per nginx worker.
 max idle timeout for keepalive connection, in milliseconds
 
 ##### max\_path\_length
-The max number of path parts to look up. This defines the max length of a path to be to lookup the corresponding frontend in redis.
+The max number of parts to the path to look up. This defines the max length of a path to be to looked up to a corresponding frontend in redis.
 
-Say in your service, your path always consists of an account name and service name ( ie http://sasservice.com/jdoe/app1). The user, may come into nginx with more to the path than that (ie http://sasservice.com/jdoe/app1/static/js/base.js), but when request comes in, redx will only search for "sasservice.com/jdoe/app1" first and "sasservice.com/jdoe" second as frontends in the database.
+Say in your service, your path always consists of an account name and service name ( ie http://sasservice.com/jdoe/app1). So the max path length you want to support for your application here is 2. If the user, comes into nginx with more to the path than that (ie http://sasservice.com/jdoe/app1/static/js/base.js), but when request comes in, redx will only search for "sasservice.com/jdoe/app1" first and "sasservice.com/jdoe" second and "sasservice.com" third, for frontends in the database.
 
-Currently max_path_length must be a minimum of 1, but that will change in the future.
+For another example, say you only want to route traffic based on the domain (ie 'chad.myserver.com'). Setting the max\_path\_length to 0 will cause redx to only look for frontends on the domain with no path.
 
 ##### plugins
 A list of plugins to enable. Plugins are executed in the order they are given. If you wish to pass a parameter to a plugin, make a plugin an array, where the first element is the plugin name and the second is the parameter. Here is an example.

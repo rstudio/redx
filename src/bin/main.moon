@@ -21,12 +21,12 @@ process_request = (request) ->
         ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "false")
     else
         ngx.req.set_header("X-Redx-Frontend-Cache-Hit", "true")
-        ngx.req.set_header("X-Redx-Frontend-Name", frontend['frontend_key'])
-        ngx.req.set_header("X-Redx-Backend-Name", frontend['backend_key'])
-        backend = redis.fetch_backend(request, frontend['backend_key'])
+        ngx.req.set_header("X-Redx-Frontend-Name", frontend['frontend'])
+        ngx.req.set_header("X-Redx-Backend-Name", frontend['backend'])
+        backend = redis.fetch_backend(frontend['backend'])
         session = {
-            frontend: frontend['frontend_key'],
-            backend: frontend['backend_key'],
+            frontend: frontend['frontend'],
+            backend: frontend['backend'],
             servers: backend[1],
             config: backend[2],
             server: nil

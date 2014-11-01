@@ -14,6 +14,7 @@ for i, plugin in ipairs(config.plugins) do
     param = plugin[2]
   end
   local str = "return require('" .. name .. "')"
+  library.log("Loading plugin: " .. name)
   plugins[i] = {
     name = name,
     param = param,

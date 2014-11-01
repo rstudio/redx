@@ -110,7 +110,7 @@ curl -X DELETE localhost:8081/flush
 
 Batch allows you to make multiple edits in a single http request and redis commit. You **MUST** have a json body with your http request. Similar to the `backends` endpoint, the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit.
 
-The json body must follow this json structure exactly. The list of backend servers can be either a string (the server) or an array (the server and score value).
+The json body must follow this json structure exactly. The list of backend servers can be either a string (the server address) or an array (the server address and score value).
 
 ```
 {
@@ -162,7 +162,7 @@ curl -X POST localhost:8081/batch -d '{
             "name": "12345",
             "servers": [
                 "google.com:80",
-                ["duckduckgo.com:80", 0]
+                ["duckduckgo.com:80", 10]
             ],
             "config": {
                 "sky_color": "blue"

@@ -160,7 +160,7 @@ return describe("redx_api", function()
     })
   end)
   it("get 404 on invalid backend #backend_api", function()
-    local response, code, headers = make_json_request("/backend/this_backend_does_not_exist")
+    local response, code, headers = make_json_request("/backends/this_backend_does_not_exist")
     return assert.same(404, code)
   end)
   it("should delete a backend #backend_api", function()
@@ -254,9 +254,7 @@ return describe("redx_api", function()
     assert.same(200, code)
     return assert.same(response, {
       message = "OK",
-      data = {
-        person = "Thomas Edison"
-      }
+      data = "Thomas Edison"
     })
   end)
   it("should batch PUT #batch_api", function()
@@ -356,18 +354,6 @@ return describe("redx_api", function()
     assert.same(200, code)
     response, code, headers = make_json_request("/orphans", "DELETE")
     assert.same(200, code)
-    assert.same(response['data'], {
-      backends = {
-        {
-          name = '5555'
-        }
-      },
-      frontends = {
-        {
-          url = 'foobar.com/path'
-        }
-      }
-    })
     response, code, headers = make_json_request("/backends/5555", "GET")
     assert.same(404, code)
     response, code, headers = make_json_request("/frontends/" .. tostring(escape('foobar.com/path')), "GET")
@@ -378,9 +364,7 @@ return describe("redx_api", function()
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
     assert.same(200, code)
-    return assert.same(response['data'], {
-      limit = '5'
-    })
+    return assert.same(response['data'], '5')
   end)
   return it("Create backend and set score #score_api", function()
     local response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')) .. "/score/30", "PUT")

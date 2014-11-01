@@ -12,7 +12,7 @@ M.split = (str, delim using nil) ->
   str ..= delim
   [part for part in str\gmatch "(.-)" .. escape_pattern delim]
 
-M.Set = (list) ->
+M.set = (list) ->
   set = {}
   for _, l in ipairs(list) do
     set[l] = true

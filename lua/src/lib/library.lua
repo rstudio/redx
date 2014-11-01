@@ -20,7 +20,7 @@ M.split = function(str, delim)
   end
   return _accum_0
 end
-M.Set = function(list)
+M.set = function(list)
   local set = { }
   for _, l in ipairs(list) do
     set[l] = true

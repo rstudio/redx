@@ -153,7 +153,7 @@ describe "redx_api", ->
         assert.same response, { message: "OK", data: { servers: {'cran.rstudio.org:80'}, config: {} } }
 
     it "get 404 on invalid backend #backend_api", ->
-        response, code, headers = make_json_request("/backend/this_backend_does_not_exist")
+        response, code, headers = make_json_request("/backends/this_backend_does_not_exist")
         assert.same 404, code
 
     it "should delete a backend #backend_api", ->
@@ -210,7 +210,7 @@ describe "redx_api", ->
         
         response, code, headers = make_json_request("/backends/menlobackend/config/person")
         assert.same 200, code
-        assert.same response, { message: "OK", data: {person: "Thomas Edison"} }
+        assert.same response, { message: "OK", data: "Thomas Edison" }
 
     it "should batch PUT #batch_api", ->
         response, code, headers = make_json_request("/batch", "POST", json_body)
@@ -283,7 +283,6 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/orphans", "DELETE")
         assert.same 200, code
-        assert.same response['data'], { backends: {{ name: '5555' }}, frontends: {{ url: 'foobar.com/path' }} }
 
         response, code, headers = make_json_request("/backends/5555", "GET")
         assert.same 404, code
@@ -296,7 +295,7 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
         assert.same 200, code
-        assert.same response['data'], { limit: '5' }
+        assert.same response['data'], '5'
 
     it "Create backend and set score #score_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}/score/30", "PUT")

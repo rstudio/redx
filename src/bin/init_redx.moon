@@ -16,6 +16,7 @@ for i, plugin in ipairs config.plugins
         name = plugin[1]
         param = plugin[2]
     str = "return require('" .. name .. "')"
+    library.log("Loading plugin: " .. name)
     plugins[i] = {
         name: name,
         param: param,

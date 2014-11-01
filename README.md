@@ -86,8 +86,18 @@ Say in your service, your path always consists of an account name and service na
 
 Currently max_path_length must be a minimum of 1, but that will change in the future.
 
+##### plugins
+A list of plugins to enable. Plugins are executed in the order they are given. If you wish to pass a parameter to a plugin, make a plugin an array, where the first element is the plugin name and the second is the parameter. Here is an example.
+```lua
+M.plugins = {
+  'stickiness',
+  { 'score', 'most' },
+  'random'
+}
+```
+
 ##### session\_length
-The amount of time (in seconds) you wish the session keep alive. This is applicable when using cookies as a user specific persistence datastore (ie stickiness).
+The amount of time (in seconds) you wish the session cookie to keep alive. This is applicable when using cookies as a user specific persistence datastore (ie stickiness).
 
 ##### default\_score
 The default score is the score that is inserted into backends in the case where a score is not provided (ie batch upating). If this config option isn't specified, it defaults to 0 (zero).

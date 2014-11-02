@@ -95,13 +95,9 @@ return describe("redx_main", function()
     json_body['backends'][1]['servers'] = {
       "rstudiobogus.com:9844"
     }
-    print(inspect(json_body))
     local response, code, headers = make_json_request("/batch", "PUT", json_body)
     assert.same(200, code)
     response, code, headers = make_request("/contact")
-    print(inspect(response))
-    print(code)
-    print(type(code))
     return assert.True((code == 502 or code == "closed"))
   end)
 end)

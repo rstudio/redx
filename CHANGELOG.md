@@ -12,6 +12,7 @@ Changelog
 
 ### Backwards Incompatibility Note
 There is a significant database restructuring in this version of redx. If you're upgrading from a previous version, flush the db after updating.
+A new path was added (the plugins directory), so you'll need to update the `lua_package_path` in your nginx config. See `nginx.conf.example` for an example.
 
 ## 1.3.0 (2014-10-20)
 

@@ -7,7 +7,7 @@ events {
 }
 
 http {
-  lua_package_path ";;./lua/src/lib/?.lua;./lua/conf/?.lua;./lua/src/bin/?.lua";
+  lua_package_path ";;./lua/src/lib/plugins/?.lua;./lua/src/lib/?.lua;./lua/conf/?.lua;./lua/src/bin/?.lua";
 
   resolver 8.8.8.8;
 

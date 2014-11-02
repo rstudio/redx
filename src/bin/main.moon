@@ -73,7 +73,19 @@ process_request = (request) ->
                 ngx.req.set_body_data = request_body
                 request_body = nil -- clear body from memory (GC)
                 ngx.var.upstream = session['server']
-    return layout: false
+    return nil
+
+process_response = (response) ->
+    if response
+        response = {} unless type(response) == 'table' -- we only accept tables as the response, enforcing here
+        response['status'] = 500 unless response['status'] -- default status
+        response['message'] = "Unknown failure." unless response['message'] -- default message
+        ngx.status = response['status']
+        ngx.say(response['message'])
+        ngx.exit(response['status'])
+    else
+        return layout: false
+        
 
 webserver = class extends lapis.Application
     cookie_attributes: (name, value) =>
@@ -91,9 +103,9 @@ webserver = class extends lapis.Application
         "Max-Age=#{config.session_length}; Path=#{p}; HttpOnly"
 
     '/': =>
-        process_request(@)
+        process_response(process_request(@))
 
     default_route: =>
-        process_request(@)
+        process_response(process_request(@))
 
 lapis.serve(webserver)

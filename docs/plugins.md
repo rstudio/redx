@@ -30,7 +30,16 @@ Session data is information about the request that redx has generated. It is a t
 The parameter is anything of your choosing. You specify it in the config file, but you can only have one param (but you're free to use a table if you want)
 
 ## Pre
-The `pre` function is run after the frontend and backend is pulled from redis, but before a backend has been choosen to route to. Some examples of what you could use the `pre` function to do are, custom authorization, backend rate limiting, test for required headers, etc.
+The `pre` function is run after the frontend and backend is pulled from redis, but before a server has been choosen to route to. Some examples of what you could use the `pre` function to do are, custom authorization, backend rate limiting, test for required headers, etc. This function should **always** return `nil` unless you want to halt the request with an error code and message. If you wish to halt the request and respond with an error code and message, return a table with `status` as the error code and `message` as the message.
+
+#### Example
+```moonscript
+M.pre = (request, session, param) ->
+    if param == "call it quits"
+        return status: 500, message: "I'm calling it quits"
+    else
+        return nil
+```
 
 Also, by using [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), you can redirect them to a custom page (ie 403 unauthorized page, or login portal).
 
@@ -38,4 +47,4 @@ Also, by using [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect),
 The `balance` function is run to figure out which server in the backend to proxy the request to. Multiple plugins can be used in a "daisy-chain" kind of way. Each plugin is run with the list of available servers and should return a list of remaining available servers. 
 
 ## Post
-The `post` function is run after a server has been chosen to proxy the request to. This can be used to do things as write the server to a cookie for stickiness, send metric data to a service, server level rate limiting, etc.
+The `post` function is run after a server has been chosen to proxy the request to. This can be used to do things as write the server to a cookie for stickiness, send metric data to a service, server level rate limiting, etc. Similar to `pre`, you can redirect here or return an error code and message. Otherwise, this function should **always** return `nil`.

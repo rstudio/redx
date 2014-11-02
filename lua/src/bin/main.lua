@@ -80,9 +80,28 @@ process_request = function(request)
       end
     end
   end
-  return {
-    layout = false
-  }
+  return nil
+end
+local process_response
+process_response = function(response)
+  if response then
+    if not (type(response) == 'table') then
+      response = { }
+    end
+    if not (response['status']) then
+      response['status'] = 500
+    end
+    if not (response['message']) then
+      response['message'] = "Unknown failure."
+    end
+    ngx.status = response['status']
+    ngx.say(response['message'])
+    return ngx.exit(response['status'])
+  else
+    return {
+      layout = false
+    }
+  end
 end
 local webserver
 do
@@ -107,10 +126,10 @@ do
       return "Max-Age=" .. tostring(config.session_length) .. "; Path=" .. tostring(p) .. "; HttpOnly"
     end,
     ['/'] = function(self)
-      return process_request(self)
+      return process_response(process_request(self))
     end,
     default_route = function(self)
-      return process_request(self)
+      return process_response(process_request(self))
     end
   }
   _base_0.__index = _base_0

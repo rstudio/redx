@@ -51,6 +51,23 @@ Setup and start vagrant
 The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
 To see redx logs, see `/var/log/nginx/[access,error].log`
 
+## Git Hooks
+It is recommended that you setup two git hooks.
+
+The pre-commit hook (`./git/hooks/pre-commit`) should be used to ensure you don't make changes to the moonscript code without recompiling the lua code.
+```bash
+#!/bin/sh
+
+moonc -t lua/ .
+```
+
+The pre-push hook (`./git/hooks/pre-push`) should be used to ensure you've run all tests and they all pass.
+```bash
+#!/bin/sh
+
+busted lua/spec/
+```
+
 Testing
 =======
 

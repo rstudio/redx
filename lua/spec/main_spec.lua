@@ -93,10 +93,11 @@ return describe("redx_main", function()
   end)
   return it("make request to bad host", function()
     json_body['backends'][1]['servers'] = {
-      "rstudio.com:9844"
+      "rstudiobogus.com:9844"
     }
     local response, code, headers = make_json_request("/batch", "PUT", json_body)
+    assert.same(200, code)
     response, code, headers = make_request("/contact")
-    return assert.same(502, code)
+    return assert.True((code == 502 or code == "closed"))
   end)
 end)

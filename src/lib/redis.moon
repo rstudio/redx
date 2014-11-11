@@ -1,19 +1,15 @@
 M = {}
 
-M.connect = (@) ->
+M.connect = () ->
     -- connect to redis
     redis = require "resty.redis"
     red = redis\new()
     red\set_timeout(config.redis_timeout)
     ok, err = red\connect(config.redis_host, config.redis_port)
     unless ok
-        library\log_err("Error connecting to redis: " .. err)
-        @msg = "error connectiong: " .. err
-        @status = 500
+        return connection_error: "Error connecting to redis: " .. err
     else
-        library.log("Connected to redis")
         if type(config.redis_password) == 'string' and #config.redis_password > 0
-            library.log("Authenticated with redis")
             red\auth(config.redis_password)
         return red
 
@@ -23,196 +19,159 @@ M.finish = (red) ->
     else
         ok, err = red\set_keepalive(config.redis_keepalive_max_idle_timeout, config.redis_keepalive_pool_size)
         unless ok
-            library.log_err("failed to set keepalive: ", err)
-            return
+            library.log_err("Failed to set keepalive: ", err)
 
-M.test = (@) ->
-    red = M.connect(@)
+-- used for when the response is pass/fail and no data
+M.boolean_response = (red, err) ->
+    if err
+        return status: 500, msg: err, redis: red
+    else
+        return status: 200, redis: red
+
+M.test = () ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     rand_value = tostring(math.random!)
     key = "healthcheck:" .. rand_value
     ok , err = red\set(key, rand_value)
     unless ok
-        @status = 500
-        @msg = "Failed to write to redis"
+        return status: 500, msg: "Failed to write to redis", redis: red
     ok, err = red\get(key)
     unless ok
-        @status = 500
-        @msg = "Failed to read redis"
+        return status: 500, msg: "Failed to read redis", redis: red
     unless ok == rand_value
-        @status = 500
-        @msg = "Healthcheck failed to write and read from redis"
+        return status: 500, msg: "Healthcheck failed to write and read from redis", redis: red
     ok, err = red\del(key)
     if ok
-        @status = 200
-        @msg = "OK"
+        return status: 200, redis: red
     else
-        @status = 500
-        @msg = "Failed to delete key from redis"
-    M.finish(red)
+        return status: 500, msg: "Failed to delete key from redis", redis: red
 
-M.commit = (@, red, error_msg) ->
+M.commit = (red, error_msg, data=nil) ->
     -- commit the change
     results, err = red\commit_pipeline()
-    if not results
-        library.log_err(error_msg .. err)
-        @msg = error_msg .. err
-        @status = 500
+    if err
+        return status: 500, msg:  error_msg .. err, redis: red
     else
-        @msg = "OK"
-        @status = 200
+        return status: 200, redis: red
 
-M.flush = (@) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.flush = () ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     ok, err = red\flushdb()
-    if ok
-        @status = 200
-        @msg = "OK"
-    else
-        @status = 500
-        @msg = err
-        library.log_err(err)
-    M.finish(red)
+    return M.boolean_response(red, err)
 
-M.get_config = (@, asset_name, config) ->
-    red = M.connect(@)
-    return nil if red == nil
-    config_value, @msg = red\zscore('backend:' .. asset_name, '_' .. config)
+M.get_config = (asset_name, config) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
+    config_value, err = red\hget('backend:' .. asset_name, '_' .. config)
     if config_value == nil
-        @resp = nil
+        return status: 404, redis: red
+    elseif err
+        return status: 500, msg: err
     else
-        @resp = { [config]: config_value }
-    if @resp
-        @status = 200
-        @msg = "OK"
-    if @resp == nil
-        @status = 404
-        @msg = "Entry does not exist"
-    else
-        @status = 500 unless @status
-        @msg = 'Unknown failutre' unless @msg
-        library.log(@msg)
-    M.finish(red)
+        return status: 200, data: config_value, redis: red
 
-M.set_config = (@, asset_name, config, value) ->
-    red = M.connect(@)
-    return nil if red == nil
-    ok, err = red\zadd('backend:' .. asset_name, value, '_' .. config)
+M.set_config = (asset_name, config, value) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
+    ok, err = red\hset('backend:' .. asset_name, '_' .. config, value)
     if ok >= 0
-        @status = 200
-        @msg = "OK"
+        return status: 200, redis: red
     else
-        @status = 500
-        err = "unknown" if err == nil
-        @msg = "Failed to save backend config: " .. err
-        library.log_err(@msg)
-    M.finish(red)
+        return status: 500, msg: "Failed to save backend config: " .. err, redis: red
 
-M.get_data = (@, asset_type, asset_name) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.get_data = (asset_type, asset_name) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
+    data = {}
     switch asset_type
         when 'frontends'
             if asset_name == nil
-                @resp = {}
                 keys, err = red\keys('frontend:*')
-                for key in *keys
-                    url = library.split(key, ':')
-                    url = url[ #url ]
-                    backend_name = red\get(key)
-                    table.insert(@resp, 1, {url: url, backend_name: backend_name})
+                if err
+                    return status: 500, msg: err, redis: red
+                else
+                    for key in *keys
+                        url = library.split(key, ':')
+                        url = url[ #url ]
+                        backend_name = red\get(key)
+                        table.insert(data, 1, {url: url, backend_name: backend_name})
+                    return status: 200, data: data, redis: red
             else
-                @resp, @msg = red\get('frontend:' .. asset_name)
-                if getmetatable(@resp) == nil
-                    @resp = nil
-            @status = 500 unless @resp
+                data, err = red\get('frontend:' .. asset_name)
+                if err
+                    return status: 500, msg: err, redis: red
+                else
+                    if getmetatable(data) == nil
+                        return status: 404, redis: red
+                    else
+                        return status: 200, data: data, redis: red
         when 'backends'
             if asset_name == nil
                 keys, err = red\keys('backend:*')
-                @resp = {}
-                for key in *keys
-                    name = library.split(key, ':')
-                    name = name[ #name ]
-                    rawdata = red\zrangebyscore(key, '-inf', '+inf', 'withscores')
-                    data = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
-                    table.insert(@resp, 1, {name: name, servers: data})
+                if err
+                    return status: 500, msg: err, redis: red
+                else
+                    for key in *keys
+                        name = library.split(key, ':')
+                        name = name[ #name ]
+                        rawdata = red\hgetall(key)
+                        servers = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                        configs = { string.sub(item, 2, -1), rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) == '_'}
+                        table.insert(data, 1, {name: name, servers: servers, config: configs})
+                    return status: 200, data: data, redis: red
             else
-                rawdata, @msg = red\zrangebyscore('backend:' .. asset_name, '-inf', '+inf', 'withscores')
-                @resp = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
-                @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
+                rawdata, err = red\hgetall('backend:' .. asset_name)
+                if err
+                    return status: 500, msg: err, redis: red
+                else
+                    servers = [item for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) != '_']
+                    configs = { string.sub(item, 2, -1), rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0 and item\sub(1,1) == '_'}
+                    if #rawdata == 0
+                        return status: 404, redis: red
+                    else
+                        return status: 200, data: { servers: servers, config: configs }, redis: red
         else
-            @status = 400
-            @msg = 'Bad asset type. Must be "frontends" or "backends"'
-    if @resp
-        @status = 200
-        @msg = "OK"
-    if @resp == nil
-        @status = 404
-        @msg = "Entry does not exist"
-    else
-        @status = 500 unless @status
-        @msg = 'Unknown failutre' unless @msg
-        library.log(@msg)
-    M.finish(red)
+            return status: 400, msg: 'Bad asset type. Must be "frontends" or "backends"', redis: red
 
-M.save_data = (@, asset_type, asset_name, asset_value, score, overwrite=false) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.save_data = (asset_type, asset_name, asset_value, score, overwrite=false) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     switch asset_type
         when 'frontends'
             ok, err = red\set('frontend:' .. asset_name, asset_value)
+            return M.boolean_response(red, err)
         when 'backends'
-            if config.default_score == nil
-                config.default_score = 0
-            if score == nil
-                score = config.default_score
-            red = M.connect(@)
+            config.default_score = 0 if config.default_score == nil
+            score = config.default_score if score == nil
             red\init_pipeline() if overwrite
             red\del('backend:' .. asset_name) if overwrite
-            ok, err = red\zadd('backend:' .. asset_name, score, asset_value)
-            M.commit(@, red, "Failed to save backend: ") if overwrite
+            ok, err = red\hset('backend:' .. asset_name, asset_value, score)
+            return M.commit(red, "Failed to save backend: ") if overwrite
+            return M.boolean_response(red, err)
         else
-            ok = false
-            @status = 400
-            @msg = 'Bad asset type. Must be "frontends" or "backends"'
-    if ok == nil
-        @status = 200
-        @msg = "OK"
-    else
-        @status = 500
-        err = "unknown" if err == nil
-        @msg = "Failed to save backend: " .. err
-        library.log_err(@msg)
-    M.finish(red)
+            return status: 400, msg: 'Bad asset type. Must be "frontends" or "backends"', redis: red
 
-M.delete_data = (@, asset_type, asset_name, asset_value=nil) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.delete_data = (asset_type, asset_name, asset_value=nil) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     switch asset_type
         when 'frontends'
-            resp, @msg = red\del('frontend:' .. asset_name)
-            @status = 500 unless @resp
+            resp, err = red\del('frontend:' .. asset_name)
+            return M.boolean_response(red, err)
         when 'backends'
             if asset_value == nil
-                resp, @msg = red\del('backend:' .. asset_name)
+                resp, err = red\del('backend:' .. asset_name)
             else
-                resp, @msg = red\zrem('backend:' .. asset_name, asset_value)
+                resp, err = red\hdel('backend:' .. asset_name, asset_value)
+            return M.boolean_response(red, err)
         else
-            @status = 400
-            @msg = 'Bad asset type. Must be "frontends" or "backends"'
-    if resp == nil
-        @resp = nil if type(@resp) == 'table' and table.getn(@resp) == 0
-        @status = 200
-        @msg = "OK" unless @msg
-    else
-        @status = 500 unless @status
-        @msg = 'Unknown failutre' unless @msg
-        library.log_err(@msg)
-    M.finish(red)
+            return status: 400, msg: 'Bad asset type. Must be "frontends" or "backends"', redis: red
 
-M.save_batch_data = (@, data, overwrite=false) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.save_batch_data = (data, overwrite=false) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
@@ -224,19 +183,24 @@ M.save_batch_data = (@, data, overwrite=false) ->
         for backend in *data['backends'] do
             red\del('backend:' .. backend["name"]) if overwrite
             -- ensure servers are a table
-            backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
-            for server in *backend['servers']
-                unless server == nil
-                    library.log('adding backend: ' .. backend["name"] .. ' ' .. server)
-                    if config.default_score == nil
-                        config.default_score = 0
-                    red\zadd('backend:' .. backend["name"], config.default_score, server)
-    M.commit(@, red, "failed to save data: ")
-    M.finish(red)
+            if backend['servers']
+                backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
+                for server in *backend['servers']
+                    unless server == nil
+                        if type(server) == 'string'
+                            -- supporting just string values so we can be backwards compatible with the API
+                            config.default_score = 0 if config.default_score == nil
+                            red\hset('backend:' .. backend["name"], server, config.default_score)
+                        else
+                            red\hset('backend:' .. backend["name"], server[1], server[2])
+            if backend['config']
+                for k,v in pairs backend['config']
+                    red\hset('backend:' .. backend["name"], "_" .. k, v)
+    M.commit(red, "Failed to batch save data: ")
 
-M.delete_batch_data = (@, data) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.delete_batch_data = (data) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     red\init_pipeline()
     if data['frontends']
         for frontend in *data['frontends'] do
@@ -244,167 +208,86 @@ M.delete_batch_data = (@, data) ->
             red\del('frontend:' .. frontend['url'])
     if data["backends"]
         for backend in *data['backends'] do
-            red\del('backend:' .. backend["name"]) if backend['servers'] == nil
+            red\del('backend:' .. backend["name"]) if backend['servers'] == nil and backend['config'] == nil
             if backend['servers']
                 -- ensure servers are a table
                 backend['servers'] = {backend['servers']} unless type(backend['servers']) == 'table'
                 for server in *backend['servers']
                     unless server == nil
                         library.log('deleting backend: ' .. backend["name"] .. ' ' .. server)
-                        red\zrem('backend:' .. backend["name"], server)
-    M.commit(@, red, "failed to save data: ")
-    M.finish(red)
+                        red\hdel('backend:' .. backend["name"], server)
+            if backend['config']
+                for k,v in ipairs backend['config']
+                    library.log('deleting backend config: ' .. backend["name"] .. ' ' .. k)
+                    red\hdel('backend:' .. backend["name"], k)
+    M.commit(red, "Failed to batch delete data: ")
 
 M.fetch_frontend = (@, max_path_length=3) ->
     path = @req.parsed_url['path']
-    path_parts = library.split path, '/'
-    keys = {}
-    p = ''
-    count = 0
-    for k,v in pairs path_parts do
+    host = @req.parsed_url['host']
+    keys, frontends = {'frontend:' .. host}, {host}
+    p, count = '', 0
+    for k,v in pairs library.split(path, '/')
         unless v == nil or v == ''
             if count < (max_path_length)
                 count += 1
                 p = p .. "/#{v}"
-                table.insert(keys, 1, @req.parsed_url['host'] .. p)
-    red = M.connect(@)
-    return nil if red == nil
-    for key in *keys do
-        resp, err = red\get('frontend:' .. key)
-        if type(resp) == 'string'
-            M.finish(red)
-            return { frontend_key: key, backend_key: resp }
+                table.insert(keys, 1, 'frontend:' .. host .. p)
+                table.insert(frontends, 1, host .. p)
+    red = M.connect()
+    return nil if red['connection_error']
+    resp, err = red\mget(unpack(keys))
     M.finish(red)
+    return nil if err
+    for i, item in pairs resp
+        if type(item) == 'string'
+            return { frontend: frontends[i], backend: tostring(item) }
     library.log_err("Frontend Cache miss")
     return nil
 
-M.fetch_server = (@, backend_key) ->
-    if config.stickiness > 0
-        export backend_cookie = @session.backend
-    export upstream = nil
-    red = M.connect(@)
-    return nil if red == nil
-    if config.stickiness > 0 and backend_cookie != nil and backend_cookie != ''
-        resp, err = red\zscore('backend:' .. backend_key, backend_cookie)
-        if resp != "0"
-            -- clear cookie by setting to nil
-            @session.backend = nil
-            export upstream = nil
-        else
-            export upstream = backend_cookie
-    if upstream == nil
-        rawdata, err = red\zrangebyscore('backend:' .. backend_key, '-inf', '+inf', 'withscores')
-        data = {}
-        data = {item,rawdata[i+1] for i, item in ipairs rawdata when i % 2 > 0}
-        --split backends from config data
-        upstreams = {}
-        upstreams = [{ backend:k, score: tonumber(v)} for k,v in pairs data when k\sub(1,1) != "_"]
-        backend_config = {}
-        backend_config = {k,v for k,v in pairs data when k\sub(1,1) == "_"}
-        if #upstreams == 1
-            -- only one backend available
-            library.log_err('Only one backend, choosing it')
-            upstream = upstreams[1]['backend']
-        else
-            if config.balance_algorithm == 'least-score' or config.balance_algorithm == 'most-score'
-                -- get least/most connection probability
-                if #upstreams == 2
-                    -- get least/most connection probability relative to max score
-                    max_score = tonumber(backend_config['_max_score'])
-                    unless max_score == nil
-                        -- get total number of available score
-                        available_score = 0
-                        for x in *upstreams
-                            if config.balance_algorithm == 'least-score'
-                                available_score += (max_score - x['score'])
-                            else
-                                available_score += x['score']
-                        -- pick random number within total available score
-                        rand = math.random( 1, available_score )
-                        if config.balance_algorithm == 'least-score'
-                            if rand <= (max_score - upstreams[1]['score'])
-                                upstream = upstreams[1]['backend']
-                            else
-                                upstream = upstreams[2]['backend']
-                        else
-                            if rand <= (upstreams[1]['score'])
-                                upstream = upstreams[1]['backend']
-                            else
-                                upstream = upstreams[2]['backend']
-                            
-                else
-                    -- get least connection probability relative to larger score
-                    -- get largest and least number of score
-                    most_score = nil
-                    least_score = nil
-                    for up in *upstreams
-                        if most_score == nil or up['score'] > most_score
-                            most_score = up['score']
-                        if least_score == nil or up['score'] < least_score
-                            least_score = up['score']
-                    if config.balance_algorithm == 'least-score'
-                        export available_upstreams = [ up for up in *upstreams when up['score'] < most_score ]
-                    else
-                        export available_upstreams = [ up for up in *upstreams when up['score'] > least_score ]
-                    if #available_upstreams > 0
-                        available_score = 0 -- available score to match highest connection count
-                        for x in *available_upstreams
-                            if config.balance_algorithm == 'least-score'
-                                available_score += (most_score - x['score'])
-                            else
-                                available_score += x['score']
-                        rand = math.random( available_score )
-                        offset = 0
-                        for up in *available_upstreams
-                            value = 0
-                            if config.balance_algorithm == 'least-score'
-                                value = (most_score - up['score'])
-                            else
-                                value = up['score']
-                            if rand <= (value + offset)
-                                upstream = up['backend']
-                                break
-                            offset += value
-                if upstream == nil and #upstreams > 0
-                    -- if least-score fails to find a backend, fallback to pick one randomly
-                    upstream = upstreams[ math.random( #upstreams ) ]['backend']
-            else
-                -- choose random upstream
-                upstream = upstreams[ math.random( #upstreams ) ]['backend']
+M.fetch_backend = (backend) ->
+    red = M.connect()
+    return { nil, nil } if red['connection_error']
+    rawdata, err = red\hgetall('backend:' .. backend)
     M.finish(red)
-    if type(upstream) == 'string'
-        if config.stickiness > 0
-            -- update cookie
-            @session.backend = upstream
-        return upstream
-    else
-        library.log_err("Backend Cache miss: " .. backend_key)
-        return nil
+    return status: 500, msg: err if err
+    servers, configs = {}, {}
+    for i, item in ipairs rawdata
+        if i % 2 > 0
+            if item\sub(1,1) == '_'
+                config_name = string.sub(item, 2, -1)
+                configs[config_name] = rawdata[i+1]
+            else
+                table.insert(servers, { address: item, score: tonumber(rawdata[i+1])})
+    return { servers, configs }
 
-M.orphans = (@) ->
-    red = M.connect(@)
-    return nil if red == nil
+M.orphans = () ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
     orphans = { frontends: {}, backends: {} }
     frontends, err = red\keys('frontend:*')
+    return status: 500, msg: err, redis: red if err
     backends, err = red\keys('backend:*')
+    return status: 500, msg: err, redis: red if err
+    rawdata, err = red\mget(unpack(frontends))
+    return status: 500, msg: err, redis: red if err
     used_backends = {}
-    for frontend in *frontends do
-        backend_name, err = red\get(frontend)
-        frontend_url = library.split(frontend, 'frontend:')[2]
+    for i, backend_name in pairs rawdata do
+        frontend_url = library.split(frontends[i], 'frontend:')[2]
         if type(backend_name) == 'string'
-            resp, err = red\exists('backend:' .. backend_name)
-            if resp == 0
-                table.insert(orphans['frontends'], { url: frontend_url })
-            else
-                table.insert(used_backends, backend_name)
+            match = false
+            for backend in *backends
+                if backend == 'backend:' .. backend_name
+                    table.insert(used_backends, backend_name)
+                    match = true
+                    break
+            table.insert(orphans['frontends'], { url: frontend_url }) unless match
         else
             table.insert(orphans['frontends'], { url: frontend_url })
-    used_backends = library.Set(used_backends)
+    used_backends = library.set(used_backends)
     for backend in *backends do
         backend_name = library.split(backend, 'backend:')[2]
         unless used_backends[backend_name]
             table.insert(orphans['backends'], { name: backend_name })
-    @resp = orphans
-    @status = 200
-    return orphans
+    return status: 200, data: orphans, redis: red
 return M

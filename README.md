@@ -2,14 +2,14 @@
 redx
 ======
 
-Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as the data store. Its inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful api (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends. 
+Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as its data store. It was inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful API (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends, set configurations, and more.
 
-One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments that are nearly constantly changing their large nginx config due to cases such as elastic backends or new user signups. Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have high availability and scalability on your load balancing layer. 
+One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments that are nearly constantly changing their large nginx config due to cases such as elastic backends or new user signups. Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have true high availability and scalability on your load balancing layer. 
 
 Project Status
 ==============
 
-Redx is new, but at [rstudio](http://www.rstudio.com/), we are using it in production serving all web traffic for [shinyapps](https://www.shinyapps.io/).
+At [rstudio](http://www.rstudio.com/), we are using it in production serving all web traffic for [shinyapps](https://www.shinyapps.io/).
 
 How it works
 ============
@@ -20,12 +20,13 @@ Redx is composed of two components; the api and main. The api is a restful api e
 The other component is main, and this is what takes regular traffic from your users. It looks up the proper backend to proxy the request to based on the host and path.
 
 ## The fallback
-In the event that there isn't a frontend or backend match for an incoming request **OR** the backend server the request was proxied to isn't responding, the request is sent to the `fallback`. This is typically your application server, which handles these failure scenario. Several headers are added to the request to help your application server understand the context in which the request is coming in. In some cases, you may want to update redx by hitting the API and insert the missing frontend and/or backend and sent them back to nginx, or maybe you want to forward them to a custom 404 page. Its up to you to decide what the behavior you want it to be.
+In the event that there isn't a frontend or backend match for an incoming request **OR** the backend server (ie a cache miss), the request was proxied to a server that isn't responding, the request is sent to the `fallback`. This is typically your application server, which handles these failure scenario. Several headers are added to the request to help your application server understand the context in which the request is coming in (ie cache miss vs port not open). In some cases, you may want to update redx by hitting the API and insert the missing frontend and/or backend and send them back to nginx to try again, or maybe you want to forward them to a custom 404 page. Its up to you to decide what the behavior you want it to be.
 
 Performance
 ===========
 
-At [rstudio](http://www.rstudio.com/), we find that redx performs slightly slower than regular redis config files. Of course, this makes sense, as you're now querying a remote redis server to lookup frontends and backends, instead of caching all that in local memory. In our unofficial benchmarks, we see a 10ms increase in response time. That being said, the payoff of having dynamic configuration and being able to easily do high availability with active active nginx load balancer is well worth the 10ms cost. Each environment is different and has different requirements, goals, etc. So its up to you to decide what is worth what.
+At [rstudio](http://www.rstudio.com/), we find that redx performs slightly slower than regular redis config files. Of course, this makes sense, as you're now querying a remote redis server to lookup frontends and backends, instead of caching all that in local memory. In our unofficial benchmarks, we see a 10ms increase in response time with using a third party redis hosting service. Of course latency to your redis server is a big factor. Redx though, keeps a pool of connections that are reused instead of making separate calls on each request.
+That being said, the payoff of having dynamic configuration and being able to easily do high availability with active active nginx load balancers is well worth the 10ms cost in my opinion. Each environment is different and has different requirements, goals, etc. So its up to you to decide what is worth what.
 
 Requirements
 ============
@@ -49,6 +50,23 @@ Setup and start vagrant
 
 The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at `/home/vagrant/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. You will however need to reload nginx when you change the nginx config located `vagrant://etc/nginx/sites-available/redx.conf`.
 To see redx logs, see `/var/log/nginx/[access,error].log`
+
+## Git Hooks
+It is recommended that you setup two git hooks.
+
+The pre-commit hook (`./git/hooks/pre-commit`) should be used to ensure you don't make changes to the moonscript code without recompiling the lua code.
+```bash
+#!/bin/sh
+
+moonc -t lua/ .
+```
+
+The pre-push hook (`./git/hooks/pre-push`) should be used to ensure you've run all tests and they all pass.
+```bash
+#!/bin/sh
+
+busted lua/spec/
+```
 
 Testing
 =======
@@ -79,243 +97,36 @@ The pool size of keepalive connections to maintain, per nginx worker.
 max idle timeout for keepalive connection, in milliseconds
 
 ##### max\_path\_length
-The max number of path parts to look up. This defines the max length of a path to be to lookup the corresponding frontend in redis.
+The max number of parts to the path to look up. This defines the max length of a path to be to looked up to a corresponding frontend in redis.
 
-Say in your service, your path always consists of an account name and service name ( ie http://sasservice.com/jdoe/app1). The user, may come into nginx with more to the path than that (ie http://sasservice.com/jdoe/app1/static/js/base.js), but when request comes in, redx will only search for "sasservice.com/jdoe/app1" first and "sasservice.com/jdoe" second as frontends in the database.
+Say in your service, your path always consists of an account name and service name ( ie http://sasservice.com/jdoe/app1). So the max path length you want to support for your application here is 2. If the user, comes into nginx with more to the path than that (ie http://sasservice.com/jdoe/app1/static/js/base.js), but when request comes in, redx will only search for "sasservice.com/jdoe/app1" first and "sasservice.com/jdoe" second and "sasservice.com" third, for frontends in the database.
 
-Currently max_path_length must be a minimum of 1, but that will change in the future.
+For another example, say you only want to route traffic based on the domain (ie 'chad.myserver.com'). Setting the max\_path\_length to 0 will cause redx to only look for frontends on the domain with no path.
 
-##### stickiness
-The amount of time (in seconds) you wish the session to be "sticky", and consistently use the same upstream server. If you wish to disable "stickiness", set value to 0 (zero).
+##### plugins
+A list of plugins to enable. Plugins are executed in the order they are given. If you wish to pass a parameter to a plugin, make a plugin an array, where the first element is the plugin name and the second is the parameter. Here is an example.
+```lua
+M.plugins = {
+  'stickiness',
+  { 'score', 'most' },
+  'random'
+}
+```
 
-##### balance\_algorithm
-The load balancing algorithm you want to use to balance traffic to your backends. The options are `least-score`, `most-score`, and `random`. `Random` is the default.
+##### session\_length
+The amount of time (in seconds) you wish the session cookie to keep alive. This is applicable when using cookies as a user specific persistence datastore (ie stickiness).
 
 ##### default\_score
 The default score is the score that is inserted into backends in the case where a score is not provided (ie batch upating). If this config option isn't specified, it defaults to 0 (zero).
 
-Load Balancing Algorithms
-=========================
-
-Redx has a few options for how to load balance to various backends. The default, is `random` which works exactly how you would imagine. The other options are `least-score` and `most-score`. 
-For `least-score` and `most-score`, associated with each backend, is a score. This score number is arbitrary, and can be whatever you want it to be. It can represent the number of connections a backend has, the amount of cpu or memory a backend is using, or something custom to your application like number of threads.
-Each set of backends can be configured to have a maximum score (ie max number of connections, CPU usage, max number of threads, etc). This maximum value is used in evaluating which backend traffic is sent to. It is important to note, that due to the score values are assumed not to be realtime, we use a probabilistic approach to routing traffic. This is so we don't send all traffic to a single backend in between each update of the score value. So efforts to balance traffic is "best efforts" and are **NOT** guarenteed. Similar to a casino, while you may statistically loose some money sometimes, eventually the house always wins.
-Load balancing does **NOT** override stickiness. If you have stickiness enabled, it is honored while a stickiness session exists. But new traffic, aka traffic that doesn't have an active stickiness session, are load balanced according to the algorithm chosen.
-
 API
 ===
 
-### (GET) /frontends
+The api is [documented here](https://github.com/rstudio/redx/blob/master/docs/api.md)
 
-The `frontends` endpoint allows you to get all current frontends
+Plugins
+=======
 
-#### Examples
+Redx has a plugin architecture to allow others to easily expand its capability to do more (publically or privately).
 
-##### `GET` example
-```
-curl localhost:8081/frontends
-```
-
-### (GET|POST|PUT|DELETE) /frontends/\<url\>/\<backend_name\>
-
-The `frontends` endpoint allows you to get, update, or delete a frontend. Take note that `POST` and `PUT` are treated the same on this endpoint. It is also important that you character escape the frontend url properly.
-
-#### Examples
-
-##### `GET` example
-```
-curl localhost:8081/frontends/myhost.com%2Ftest
-```
-
-##### `POST/PUT` example
-```
-curl -X POST localhost:8081/frontends/myhost.com%2Ftest/mybackend
-```
-
-##### `DELETE` example
-```
-curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest
-```
-
-### (GET) /backends
-
-The `backends` endpoint allows you to get all backends.
-
-#### Examples
-
-##### `GET` example
-```
-curl localhost:8081/backends
-```
-
-### (GET|POST|PUT|DELETE) /backends/\<name\>/\<server\>
-
-The `backends` endpoint allows you to get, update, replace, or delete a backend. Using the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit. Be sure to character escape as needed.
-
-#### Examples
-
-##### `GET` example
-```
-curl localhost:8081/backends/mybackend
-```
-
-##### `POST/PUT` example
-```
-curl -X POST localhost:8081/backends/mybackend/google.com%3A80
-```
-
-##### `DELETE` example
-```
-# will delete the entire backend
-curl -X DELETE localhost:8081/backends/mybackend
-# will delete one server in the backend
-curl -X DELETE localhost:8081/backends/mybackend/google.com%3A80
-```
-
-### (PUT) /backends/\<name\>/\<server\>/score/\<score>
-
-The `backend score` endpoint allows you to update the score a backend has. This score is used by the `least-score` and `most-score` load balancing algorithm to probabilistically send incoming requests to the most probably backend with the least or most score.
-
-#### Examples
-
-##### `PUT` example
-```
-curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/score/31
-```
-
-### (GET|PUT) /backends/\<name\>/config/\<config_name\>/\<config_value\>
-
-The `backend configuration` endpoint allows you to get, update, or replace a backend config. Be sure to character escape as needed.
-
-#### Examples
-
-##### `GET` example
-```
-curl localhost:8081/backends/mybackend/config/max_score/30
-```
-
-##### `PUT` example
-```
-curl -X PUT localhost:8081/backends/mybackend/config/max_score
-```
-
-### (DELETE) /flush
-
-Flush clears the redis database of all data. Its literally runs the [`FLUSHDB`](http://redis.io/commands/flushdb) command within redis.
-
-#### Examples
-
-##### `DELETE` example
-
-```
-curl -X DELETE localhost:8081/flush
-```
-### (POST|PUT|DELETE) /batch
-
-Batch allows you to make multiple edits in a single http request and redis commit. You **MUST** have a json body with your http request. Similar to the `backends` endpoint, the `POST` method will "append-only" to the backend, while the `PUT` method will replace what is there in a single redis commit.
-
-The json body must follow this json structure exactly
-
-```
-{
-    "frontends": [
-        {
-            "url": "localhost/search",
-            "backend_name": "12345"
-        },
-        {
-            "url": "test.com/menlo/park",
-            "backend_name": "menlobackend"
-        }
-    ],
-    "backends": [
-        {
-            "name": "12345",
-            "servers": [
-                "google.com:80",
-                "duckduckgo.com:80"
-            ]
-        },
-        {
-            "name": "menlobackend",
-            "servers": [
-                "menloparkmuseum.org",
-                "tesc.edu"
-            ]
-        }
-    ]
-}
-```
-
-#### Examples
-
-##### `POST/PUT` example
-```
-curl -X POST localhost:8081/batch -d '{
-    "frontends": [
-        {
-            "url": "localhost/test",
-            "backend_name": "12345"
-        }
-    ],
-    "backends": [
-        {
-            "name": "12345",
-            "servers": [
-                "google.com:80",
-                "duckduckgo.com:80"
-            ]
-        }
-    ]
-}'
-```
-##### `DELETE` example
-```
-# will delete the frontend and backend
-curl -X DELETE localhost:8081/batch -d '{
-    "frontends": [
-        {
-            "url": "localhost/test"
-        }
-    ],
-    "backends": [
-        {
-            "name": "12345"
-        }
-    ]
-}'
-
-# will delete only one of the servers in the backend
-curl -X DELETE localhost:8081/batch -d '{
-    "backends": [
-        {
-            "name": "12345",
-            "servers": [
-                "google.com:80"
-            ]
-        }
-    ]
-}'
-```
-
-### (GET) /health
-This endpoint is designed to be used to check the health of redx. When you hit this endpoint, redx with attempt to write, read, and delete a key in redis to confirm that its capable of accessing redis. Getting a `200` response code from this endpoint should mean that the redx service is healthy.
-
-##### `GET` example
-```
-curl localhost:8081/health
-```
-
-### (GET|DELETE) /orphans
-Will return or delete any frontends and backends that are orphans. Meaning a list of any frontends that point to a missing backend, or any backends that don't have a frontend pointing to it.
-
-##### `GET` example
-```
-curl localhost:8081/orphans
-```
-
-##### `DELETE` example
-```
-curl -X DELETE localhost:8081/orphans
-```
-
+See the [plugins documentation](https://github.com/rstudio/redx/blob/master/docs/plugins.md)

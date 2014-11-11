@@ -11,7 +11,17 @@ end
 inspect = require("inspect")
 http = require("socket.http")
 ltn12 = require("ltn12")
-json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                "duckduckgo.com:80",\n                "google.com:80"\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ]\n        }\n    ]\n}')
+json_body = from_json('{\n    "frontends": [\n        {\n            "url": "localhost/search",\n            "backend_name": "12345"\n        },\n        {\n            "url": "test.com/menlo/park",\n            "backend_name": "menlobackend"\n        }\n    ],\n    "backends": [\n        {\n            "name": "12345",\n            "servers": [\n                ["duckduckgo.com:80", 10],\n                ["google.com:80", 30]\n            ]\n        },\n        {\n            "name": "menlobackend",\n            "servers": [\n                "menloparkmuseum.org",\n                "tesc.edu"\n            ],\n            "config": {\n                "person": "Thomas Edison"\n            }\n        }\n    ]\n}')
+local table_length
+table_length = function(t)
+  local count = 0
+  local _list_0 = table
+  for _index_0 = 1, #_list_0 do
+    local item = _list_0[_index_0]
+    count = count + 1
+  end
+  return count
+end
 local make_json_request
 make_json_request = function(url, method, body, port)
   if method == nil then
@@ -74,10 +84,7 @@ return describe("redx_api", function()
     local response, code, headers = make_json_request("/batch", "POST", json_body)
     assert.same(200, code)
     response, code, headers = make_json_request("/frontends")
-    return assert.same(response, {
-      message = "OK",
-      data = json_body['frontends']
-    })
+    return assert.same(table_length(response['frontends']), table_length(json_body['frontends']))
   end)
   it("get 404 on invalid frontend #frontend_api", function()
     local response, code, headers = make_json_request("/frontends/this_frontend_does_not_exist")
@@ -105,7 +112,10 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80'
+        servers = {
+          'rstudio.com:80'
+        },
+        config = { }
       }
     })
   end)
@@ -113,10 +123,7 @@ return describe("redx_api", function()
     local response, code, headers = make_json_request("/batch", "POST", json_body)
     assert.same(200, code)
     response, code, headers = make_json_request("/backends")
-    return assert.same(response, {
-      message = "OK",
-      data = json_body['backends']
-    })
+    return assert.same(table_length(response['backends']), table_length(json_body['backends']))
   end)
   it("PUT replaces backend #backend_api", function()
     local response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "POST")
@@ -131,8 +138,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('cran.rstudio.org:80')), "PUT")
@@ -142,12 +152,15 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'cran.rstudio.org:80'
+        servers = {
+          'cran.rstudio.org:80'
+        },
+        config = { }
       }
     })
   end)
   it("get 404 on invalid backend #backend_api", function()
-    local response, code, headers = make_json_request("/backend/this_backend_does_not_exist")
+    local response, code, headers = make_json_request("/backends/this_backend_does_not_exist")
     return assert.same(404, code)
   end)
   it("should delete a backend #backend_api", function()
@@ -163,8 +176,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')), "DELETE")
@@ -174,7 +190,10 @@ return describe("redx_api", function()
     return assert.same(response, {
       message = "OK",
       data = {
-        'shinyapps.io:80'
+        servers = {
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
   end)
@@ -191,8 +210,11 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80',
-        'shinyapps.io:80'
+        servers = {
+          'rstudio.com:80',
+          'shinyapps.io:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/backends/5555", "DELETE")
@@ -216,12 +238,23 @@ return describe("redx_api", function()
     if response['data'] then
       table.sort(response['data'])
     end
-    return assert.same(response, {
+    assert.same(response, {
       message = "OK",
       data = {
-        "menloparkmuseum.org",
-        "tesc.edu"
+        servers = {
+          "menloparkmuseum.org",
+          "tesc.edu"
+        },
+        config = {
+          person = "Thomas Edison"
+        }
       }
+    })
+    response, code, headers = make_json_request("/backends/menlobackend/config/person")
+    assert.same(200, code)
+    return assert.same(response, {
+      message = "OK",
+      data = "Thomas Edison"
     })
   end)
   it("should batch PUT #batch_api", function()
@@ -239,8 +272,13 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        "menloparkmuseum.org",
-        "tesc.edu"
+        servers = {
+          "menloparkmuseum.org",
+          "tesc.edu"
+        },
+        config = {
+          person = "Thomas Edison"
+        }
       }
     })
     local temp_json_body = json_body
@@ -256,7 +294,10 @@ return describe("redx_api", function()
     response, code, headers = make_json_request("/backends/" .. tostring(escape(temp_json_body['backends'][1]['name'])))
     assert.same(200, code)
     return assert.same(response['data'], {
-      'apple.com'
+      servers = {
+        'apple.com'
+      },
+      config = { }
     })
   end)
   it("should flush db #flush_api", function()
@@ -267,7 +308,10 @@ return describe("redx_api", function()
     assert.same(response, {
       message = "OK",
       data = {
-        'rstudio.com:80'
+        servers = {
+          'rstudio.com:80'
+        },
+        config = { }
       }
     })
     response, code, headers = make_json_request("/flush", "DELETE")
@@ -310,18 +354,6 @@ return describe("redx_api", function()
     assert.same(200, code)
     response, code, headers = make_json_request("/orphans", "DELETE")
     assert.same(200, code)
-    assert.same(response['data'], {
-      backends = {
-        {
-          name = '5555'
-        }
-      },
-      frontends = {
-        {
-          url = 'foobar.com/path'
-        }
-      }
-    })
     response, code, headers = make_json_request("/backends/5555", "GET")
     assert.same(404, code)
     response, code, headers = make_json_request("/frontends/" .. tostring(escape('foobar.com/path')), "GET")
@@ -332,9 +364,7 @@ return describe("redx_api", function()
     assert.same(200, code)
     response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
     assert.same(200, code)
-    return assert.same(response['data'], {
-      limit = '5'
-    })
+    return assert.same(response['data'], '5')
   end)
   return it("Create backend and set score #score_api", function()
     local response, code, headers = make_json_request("/backends/5555/" .. tostring(escape('rstudio.com:80')) .. "/score/30", "PUT")

@@ -5,10 +5,10 @@ do
   escape_pattern = _obj_0.escape_pattern
 end
 M.log = function(msg)
-  return ngx.log(ngx.NOTICE, msg)
+  return ngx.log(ngx.NOTICE, inspect(msg))
 end
 M.log_err = function(msg)
-  return ngx.log(ngx.ERR, msg)
+  return ngx.log(ngx.ERR, inspect(msg))
 end
 M.split = function(str, delim)
   str = str .. delim
@@ -20,7 +20,7 @@ M.split = function(str, delim)
   end
   return _accum_0
 end
-M.Set = function(list)
+M.set = function(list)
   local set = { }
   for _, l in ipairs(list) do
     set[l] = true

@@ -84,7 +84,8 @@ describe "redx_main", ->
 
     it "make request to bad host", ->
         -- replace servers with a bad server with a closed port
-        json_body['backends'][1]['servers'] = { "rstudio.com:9844" }
+        json_body['backends'][1]['servers'] = { "rstudiobogus.com:9844" }
         response, code, headers = make_json_request("/batch", "PUT", json_body)
+        assert.same 200, code
         response, code, headers = make_request("/contact")
-        assert.same 502, code
+        assert.True (code == 502 or code == "closed")

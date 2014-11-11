@@ -20,8 +20,8 @@ export json_body = from_json('{
         {
             "name": "12345",
             "servers": [
-                "duckduckgo.com:80",
-                "google.com:80"
+                ["duckduckgo.com:80", 10],
+                ["google.com:80", 30]
             ]
         },
         {
@@ -29,10 +29,19 @@ export json_body = from_json('{
             "servers": [
                 "menloparkmuseum.org",
                 "tesc.edu"
-            ]
+            ],
+            "config": {
+                "person": "Thomas Edison"
+            }
         }
     ]
 }')
+
+table_length = (t) ->
+  count = 0
+  for item in *table
+    count += 1
+  return count
 
 make_json_request = (url, method="GET", body=nil, port=8081) ->
     respbody = {}
@@ -86,7 +95,7 @@ describe "redx_api", ->
         assert.same 200, code
 
         response, code, headers = make_json_request("/frontends")
-        assert.same response, { message: "OK", data: json_body['frontends'] }
+        assert.same table_length(response['frontends']), table_length(json_body['frontends'])
 
     it "get 404 on invalid frontend #frontend_api", ->
         response, code, headers = make_json_request("/frontends/this_frontend_does_not_exist")
@@ -114,14 +123,14 @@ describe "redx_api", ->
         -- check its actually in the db correctly
         response, code, headers = make_json_request("/backends/5555")
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'rstudio.com:80' } }
+        assert.same response, { message: "OK", data: { servers: {'rstudio.com:80' }, config: {} } }
 
     it "get all backends #backend_api", ->
         response, code, headers = make_json_request("/batch", "POST", json_body)
         assert.same 200, code
 
         response, code, headers = make_json_request("/backends")
-        assert.same response, { message: "OK", data: json_body['backends'] }
+        assert.same table_length(response['backends']), table_length(json_body['backends'])
 
     it "PUT replaces backend #backend_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "POST")
@@ -133,7 +142,7 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555")
         table.sort(response['data']) if response['data']
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
+        assert.same response, { message: "OK", data: { servers: {'rstudio.com:80', 'shinyapps.io:80' }, config: {} } }
 
         -- do PUT statement to replace whats in the backend with the new server
         response, code, headers = make_json_request("/backends/5555/#{escape('cran.rstudio.org:80')}", "PUT")
@@ -141,10 +150,10 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/backends/5555")
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'cran.rstudio.org:80' } }
+        assert.same response, { message: "OK", data: { servers: {'cran.rstudio.org:80'}, config: {} } }
 
     it "get 404 on invalid backend #backend_api", ->
-        response, code, headers = make_json_request("/backend/this_backend_does_not_exist")
+        response, code, headers = make_json_request("/backends/this_backend_does_not_exist")
         assert.same 404, code
 
     it "should delete a backend #backend_api", ->
@@ -157,14 +166,14 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555")
         table.sort(response['data']) if response['data']
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
+        assert.same response, { message: "OK", data: { servers: {'rstudio.com:80', 'shinyapps.io:80' }, config: {} } }
 
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "DELETE")
         assert.same 200, code
 
         response, code, headers = make_json_request("/backends/5555")
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'shinyapps.io:80' } }
+        assert.same response, { message: "OK", data: { servers: {'shinyapps.io:80'}, config: {} } }
 
     it "should delete all servers in a backend #backend_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "POST")
@@ -176,7 +185,7 @@ describe "redx_api", ->
         response, code, headers = make_json_request("/backends/5555")
         table.sort(response['data']) if response['data']
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'rstudio.com:80', 'shinyapps.io:80' } }
+        assert.same response, { message: "OK", data: { servers: {'rstudio.com:80', 'shinyapps.io:80' }, config: {} } }
 
         response, code, headers = make_json_request("/backends/5555", "DELETE")
         assert.same 200, code
@@ -197,7 +206,11 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/backends/menlobackend")
         table.sort(response['data']) if response['data']
-        assert.same response, { message: "OK", data: {"menloparkmuseum.org", "tesc.edu"} }
+        assert.same response, { message: "OK", data: { servers: {"menloparkmuseum.org", "tesc.edu"}, config: { person: "Thomas Edison" } } }
+        
+        response, code, headers = make_json_request("/backends/menlobackend/config/person")
+        assert.same 200, code
+        assert.same response, { message: "OK", data: "Thomas Edison" }
 
     it "should batch PUT #batch_api", ->
         response, code, headers = make_json_request("/batch", "POST", json_body)
@@ -208,7 +221,7 @@ describe "redx_api", ->
         assert.same response, { message: "OK", data: "menlobackend" }
         response, code, headers = make_json_request("/backends/menlobackend")
         table.sort(response['data']) if response['data']
-        assert.same response, { message: "OK", data: {"menloparkmuseum.org", "tesc.edu"} }
+        assert.same response, { message: "OK", data: { servers: {"menloparkmuseum.org", "tesc.edu"}, config: { person: "Thomas Edison" } } }
 
         -- update json_body
         temp_json_body = json_body
@@ -224,7 +237,7 @@ describe "redx_api", ->
         assert.same response['data'], '6757'
         response, code, headers = make_json_request("/backends/#{escape(temp_json_body['backends'][1]['name'])}")
         assert.same 200, code
-        assert.same response['data'], { 'apple.com' }
+        assert.same response['data'], { servers: {'apple.com'}, config: {} }
 
     it "should flush db #flush_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}", "POST")
@@ -233,7 +246,7 @@ describe "redx_api", ->
         -- check its actually in the db correctly
         response, code, headers = make_json_request("/backends/5555")
         assert.same 200, code
-        assert.same response, { message: "OK", data: { 'rstudio.com:80' } }
+        assert.same response, { message: "OK", data: { servers: {'rstudio.com:80'}, config: {} } }
 
         
         response, code, headers = make_json_request("/flush", "DELETE")
@@ -270,7 +283,6 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/orphans", "DELETE")
         assert.same 200, code
-        assert.same response['data'], { backends: {{ name: '5555' }}, frontends: {{ url: 'foobar.com/path' }} }
 
         response, code, headers = make_json_request("/backends/5555", "GET")
         assert.same 404, code
@@ -283,7 +295,7 @@ describe "redx_api", ->
 
         response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
         assert.same 200, code
-        assert.same response['data'], { limit: '5' }
+        assert.same response['data'], '5'
 
     it "Create backend and set score #score_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}/score/30", "PUT")

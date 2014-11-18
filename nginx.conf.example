@@ -25,7 +25,9 @@ http {
 
     location / {
       default_type application/json;
-      content_by_lua_file "./lua/src/bin/api.lua";
+      content_by_lua '
+        require("lapis").serve("api")
+      ';
     }
   }
 
@@ -42,8 +44,9 @@ http {
     set $upstream 'fallback';
 
     location / {
-      default_type application/json;
-      access_by_lua_file "./lua/src/bin/main.lua";
+      access_by_lua '
+        require("lapis").serve("main")
+      ';
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "upgrade";

@@ -27,4 +27,34 @@ M.set = function(list)
   end
   return set
 end
+M.response = function(t)
+  if t['redis'] then
+    redis.finish(t['redis'])
+  end
+  local response = {
+    status = 500,
+    json = {
+      message = "Unknown failure"
+    }
+  }
+  if t['status'] then
+    response['status'] = t['status']
+  end
+  if t['msg'] then
+    response['json']['message'] = t['msg']
+  end
+  if t['data'] then
+    response['json']['data'] = t['data']
+  end
+  if t['msg'] == nil and response['status'] < 300 then
+    response['json']['message'] = "OK"
+  end
+  if t['msg'] == nil and response['status'] == 404 then
+    response['json']['message'] = "Entry does not exist"
+  end
+  if response['status'] >= 300 then
+    library.log_err(response)
+  end
+  return response
+end
 return M

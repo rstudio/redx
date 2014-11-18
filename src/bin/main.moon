@@ -87,7 +87,7 @@ process_response = (response) ->
         return layout: false
         
 
-webserver = class extends lapis.Application
+class extends lapis.Application
     cookie_attributes: (name, value) =>
         path = @req.parsed_url['path']
         path_parts = library.split path, '/'
@@ -107,5 +107,3 @@ webserver = class extends lapis.Application
 
     default_route: =>
         process_response(process_request(@))
-
-lapis.serve(webserver)

@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## 2.0.1 (2014-11-18)
+
+### Features
++ [PR](https://github.com/rstudio/redx/pull/11): Fix memory leak
+
+### Backwards Incompatibility Note
+This change requires an update to nginx.conf using `content_by_lua`. See the `nginx.conf.example` for an example. 
+
 ## 2.0 (2014-11-1)
 
 ### Features

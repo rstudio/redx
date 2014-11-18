@@ -103,7 +103,6 @@ process_response = function(response)
     }
   end
 end
-local webserver
 do
   local _parent_0 = lapis.Application
   local _base_0 = {
@@ -139,7 +138,7 @@ do
       return _parent_0.__init(self, ...)
     end,
     __base = _base_0,
-    __name = "webserver",
+    __name = nil,
     __parent = _parent_0
   }, {
     __index = function(cls, name)
@@ -160,6 +159,5 @@ do
   if _parent_0.__inherited then
     _parent_0.__inherited(_parent_0, _class_0)
   end
-  webserver = _class_0
+  return _class_0
 end
-return lapis.serve(webserver)

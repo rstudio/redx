@@ -60,6 +60,8 @@ class extends lapis.Application
     '/backends/:name/config/:config': respond_to {
         GET: =>
             library.response(redis.get_config(unescape(@params.name), unescape(@params.config)))
+        DELETE: =>
+            library.response(redis.delete_config(unescape(@params.name), unescape(@params.config)))
     }
 
     '/backends/:name/config/:config/:value': respond_to {

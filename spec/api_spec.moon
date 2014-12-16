@@ -297,6 +297,20 @@ describe "redx_api", ->
         assert.same 200, code
         assert.same response['data'], '5'
 
+    it "should delete backend config #config_api", ->
+        response, code, headers = make_json_request("/backends/5555/config/limit/5", "PUT")
+        assert.same 200, code
+
+        response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
+        assert.same 200, code
+        assert.same response['data'], '5'
+
+        response, code, headers = make_json_request("/backends/5555/config/limit", "DELETE")
+        assert.same 200, code
+
+        response, code, headers = make_json_request("/backends/5555/config/limit", "GET")
+        assert.same 404, code
+
     it "Create backend and set score #score_api", ->
         response, code, headers = make_json_request("/backends/5555/#{escape('rstudio.com:80')}/score/30", "PUT")
         assert.same 200, code

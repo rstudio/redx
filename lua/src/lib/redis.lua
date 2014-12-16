@@ -124,7 +124,7 @@ M.get_config = function(asset_name, config)
     }
   end
   local config_value, err = red:hget('backend:' .. asset_name, '_' .. config)
-  if config_value == nil then
+  if type(config_value) ~= 'string' then
     return {
       status = 404,
       redis = red
@@ -141,6 +141,17 @@ M.get_config = function(asset_name, config)
       redis = red
     }
   end
+end
+M.delete_config = function(asset_name, config)
+  local red = M.connect()
+  if red['connection_error'] then
+    return {
+      status = 500,
+      msg = red['connection_error']
+    }
+  end
+  local ok, err = red:hdel('backend:' .. asset_name, '_' .. config)
+  return M.boolean_response(red, err)
 end
 M.set_config = function(asset_name, config, value)
   local red = M.connect()

@@ -79,7 +79,7 @@ The `backend score` endpoint allows you to update the score a backend has. This 
 curl -X PUT localhost:8081/backends/mybackend/google.com%3A80/score/31
 ```
 
-### (GET|PUT) /backends/\<name\>/config/\<config_name\>/\<config_value\>
+### (GET|PUT|DELETE) /backends/\<name\>/config/\<config_name\>/\<config_value\>
 
 The `backend configuration` endpoint allows you to get, update, or replace a backend config. Be sure to character escape as needed.
 
@@ -87,12 +87,17 @@ The `backend configuration` endpoint allows you to get, update, or replace a bac
 
 ##### `GET` example
 ```
-curl localhost:8081/backends/mybackend/config/max_score/30
+curl localhost:8081/backends/mybackend/config/max_score
 ```
 
 ##### `PUT` example
 ```
-curl -X PUT localhost:8081/backends/mybackend/config/max_score
+curl -X PUT localhost:8081/backends/mybackend/config/max_score/30
+```
+
+##### `DELETE` example
+```
+curl -X DELETE localhost:8081/backends/mybackend/config/max_score
 ```
 
 ### (DELETE) /flush

@@ -65,12 +65,18 @@ M.get_config = (asset_name, config) ->
     red = M.connect()
     return status: 500, msg: red['connection_error'] if red['connection_error']
     config_value, err = red\hget('backend:' .. asset_name, '_' .. config)
-    if config_value == nil
+    if type(config_value) != 'string'
         return status: 404, redis: red
     elseif err
         return status: 500, msg: err
     else
         return status: 200, data: config_value, redis: red
+
+M.delete_config = (asset_name, config) ->
+    red = M.connect()
+    return status: 500, msg: red['connection_error'] if red['connection_error']
+    ok, err = red\hdel('backend:' .. asset_name, '_' .. config)
+    return M.boolean_response(red, err)
 
 M.set_config = (asset_name, config, value) ->
     red = M.connect()

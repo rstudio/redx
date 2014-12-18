@@ -92,6 +92,9 @@ do
     ['/backends/:name/config/:config'] = respond_to({
       GET = function(self)
         return library.response(redis.get_config(unescape(self.params.name), unescape(self.params.config)))
+      end,
+      DELETE = function(self)
+        return library.response(redis.delete_config(unescape(self.params.name), unescape(self.params.config)))
       end
     }),
     ['/backends/:name/config/:config/:value'] = respond_to({

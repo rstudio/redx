@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## 2.0.2 (2014-12-18)
+
+### Features
++ [PR](https://github.com/rstudio/redx/pull/13): Add API endpoint to delete backend configs
++ [Bug](https://github.com/rstudio/redx/commit/d5f74e91627a0d78e24162e2e72942d711e0d57d) Fixed bugs with weighted_score plugin 
+
 ## 2.0.1 (2014-11-18)
 
 ### Features

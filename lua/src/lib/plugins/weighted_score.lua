@@ -27,9 +27,9 @@ M.balance = function(request, session, param)
     end
     local rand = math.random(1, available_score)
     if param == 'least' then
-      local first_server_score = (max_score - servers[1]['score'])
+      first_server_score = (max_score - servers[1]['score'])
     else
-      local first_server_score = servers[1]['score']
+      first_server_score = servers[1]['score']
     end
     if rand <= first_server_score then
       return servers[1]
@@ -43,8 +43,8 @@ M.balance = function(request, session, param)
       if most_score == nil or s['score'] > most_score then
         most_score = s['score']
       end
-      if least_score == nil or up['score'] < least_score then
-        least_score = up['score']
+      if least_score == nil or s['score'] < least_score then
+        least_score = s['score']
       end
       if param == 'least' then
         do

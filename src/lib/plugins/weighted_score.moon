@@ -47,9 +47,9 @@ M.balance = (request, session, param) ->
         -- pick random number within total available score
         rand = math.random( 1, available_score )
         if param == 'least'
-            first_server_score = (max_score - servers[1]['score'])
+            export first_server_score = (max_score - servers[1]['score'])
         else
-            first_server_score = servers[1]['score']
+            export first_server_score = servers[1]['score']
         if rand <= first_server_score
             return servers[1]
         else
@@ -63,8 +63,8 @@ M.balance = (request, session, param) ->
         for s in *servers
             if most_score == nil or s['score'] > most_score
                 most_score = s['score']
-            if least_score == nil or up['score'] < least_score
-                least_score = up['score']
+            if least_score == nil or s['score'] < least_score
+                least_score = s['score']
             if param == 'least'
                 available_upstreams = [ s for s in *servers when s['score'] < most_score ]
             else

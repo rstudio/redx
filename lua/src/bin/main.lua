@@ -94,6 +94,7 @@ process_response = function(response)
     if not (response['message']) then
       response['message'] = "Unknown failure."
     end
+    ngx.header["Content-type"] = "text/plain"
     ngx.status = response['status']
     ngx.say(response['message'])
     return ngx.exit(response['status'])

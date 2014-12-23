@@ -12,7 +12,7 @@ M.pre = (request, session, param) ->
     -- If you want to exit the request with a status code and message return the table
     -- return nil (or nothing at all) if you want to continue processing the request
     if session['frontend'] == session['backend']
-        return status: 500, render: "The frontend is the backend, that makes no sense"
+        return status: 500, message: "The frontend is the backend, that makes no sense"
 
 M.balance = (request, session, param) ->
     -- processes the list of available servers to reduce or pick the servers you want to proxy to

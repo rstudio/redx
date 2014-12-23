@@ -3,7 +3,7 @@ M.pre = function(request, session, param)
   if session['frontend'] == session['backend'] then
     return {
       status = 500,
-      render = "The frontend is the backend, that makes no sense"
+      message = "The frontend is the backend, that makes no sense"
     }
   end
 end

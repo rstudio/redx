@@ -30,13 +30,13 @@ Session data is information about the request that redx has generated. It is a t
 The parameter is anything of your choosing. You specify it in the config file, but you can only have one param (but you're free to use a table if you want)
 
 ## Pre
-The `pre` function is run after the frontend and backend is pulled from redis, but before a server has been choosen to route to. Some examples of what you could use the `pre` function to do are, custom authorization, backend rate limiting, test for required headers, etc. This function should **always** return `nil` unless you want to halt the request with an error code and message. If you wish to halt the request and respond with an error code and message, return a table with `status` as the error code and `message` as the message.
+The `pre` function is run after the frontend and backend is pulled from redis, but before a server has been choosen to route to. Some examples of what you could use the `pre` function to do are, custom authorization, backend rate limiting, test for required headers, etc. This function should **always** return `nil` unless you want to halt the request with an error code and message. If you wish to halt the request and respond with an error code and message, return a table with `status` as the error code and `message` as the message. You can also return an optional `content\_type` (default is "text/plain")
 
 #### Example
 ```moonscript
 M.pre = (request, session, param) ->
     if param == "call it quits"
-        return status: 500, message: "I'm calling it quits"
+        return status: 500, message: "I'm calling it quits", content_type: "text/plain"
     else
         return nil
 ```

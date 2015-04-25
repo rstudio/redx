@@ -80,7 +80,10 @@ process_response = (response) ->
         response = {} unless type(response) == 'table' -- we only accept tables as the response, enforcing here
         response['status'] = 500 unless response['status'] -- default status
         response['message'] = "Unknown failure." unless response['message'] -- default message
-        ngx.header["Content-type"] = "text/plain"
+        if response['content_type']
+            ngx.header["Content-type"] = response['content_type']
+        else
+            ngx.header["Content-type"] = "text/plain"
         ngx.status = response['status']
         ngx.say(response['message'])
         ngx.exit(response['status'])

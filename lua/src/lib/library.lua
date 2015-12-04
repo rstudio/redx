@@ -1,9 +1,6 @@
 local M = { }
 local escape_pattern
-do
-  local _obj_0 = require("lapis.util")
-  escape_pattern = _obj_0.escape_pattern
-end
+escape_pattern = require("lapis.util").escape_pattern
 M.log = function(msg)
   return ngx.log(ngx.NOTICE, inspect(msg))
 end
@@ -19,6 +16,11 @@ M.split = function(str, delim)
     _len_0 = _len_0 + 1
   end
   return _accum_0
+end
+M.replace = function(str, what, sub)
+  what = string.gsub(what, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
+  sub = string.gsub(sub, "[%%]", "%%%%")
+  return string.gsub(str, what, sub)
 end
 M.set = function(list)
   local set = { }

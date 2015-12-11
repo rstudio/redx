@@ -12,6 +12,11 @@ M.split = (str, delim using nil) ->
   str ..= delim
   [part for part in str\gmatch "(.-)" .. escape_pattern delim]
 
+M.replace = (str, what, sub) ->
+    what = string.gsub(what, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1") -- escape pattern
+    sub = string.gsub(sub, "[%%]", "%%%%") -- escape replacement
+    return string.gsub(str, what, sub)
+
 M.set = (list) ->
   set = {}
   for _, l in ipairs(list) do

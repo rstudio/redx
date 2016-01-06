@@ -20,7 +20,7 @@ The `frontends` endpoint allows you to get, update, or delete a frontend. Take n
 
 ##### `GET` example
 ```
-curl localhost:8081/frontends/myhost.com%2Ftest
+curl localhost:8081/frontends/myhost.com%2Ftest%2F
 ```
 
 ##### `POST/PUT` example
@@ -30,7 +30,7 @@ curl -X POST localhost:8081/frontends/myhost.com%2Ftest/mybackend
 
 ##### `DELETE` example
 ```
-curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest
+curl -X DELETE localhost:8081/frontends/myhost.com%2Ftest%2F
 ```
 
 ### (GET) /backends
@@ -121,11 +121,11 @@ The json body must follow this json structure exactly. The list of backend serve
 {
     "frontends": [
         {
-            "url": "localhost/search",
+            "url": "localhost/search/",
             "backend_name": "12345"
         },
         {
-            "url": "test.com/menlo/park",
+            "url": "test.com/menlo/park/",
             "backend_name": "menlobackend"
         }
     ],
@@ -158,7 +158,7 @@ The json body must follow this json structure exactly. The list of backend serve
 curl -X POST localhost:8081/batch -d '{
     "frontends": [
         {
-            "url": "localhost/test",
+            "url": "localhost/test/",
             "backend_name": "12345"
         }
     ],
@@ -182,7 +182,7 @@ curl -X POST localhost:8081/batch -d '{
 curl -X DELETE localhost:8081/batch -d '{
     "frontends": [
         {
-            "url": "localhost/test"
+            "url": "localhost/test/"
         }
     ],
     "backends": [

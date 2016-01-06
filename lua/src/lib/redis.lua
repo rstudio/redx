@@ -538,9 +538,11 @@ M.fetch_frontend = function(self, max_path_length)
     if not (v == nil or v == '') then
       if count < (max_path_length) then
         count = count + 1
+        v = library.strip(v, '/')
         p = p .. "/" .. tostring(v)
-        table.insert(keys, 1, 'frontend:' .. host .. p)
-        table.insert(frontends, 1, host .. p)
+        local frontend = tostring(host) .. tostring(p) .. "/"
+        table.insert(keys, 1, "frontend:" .. tostring(frontend))
+        table.insert(frontends, 1, frontend)
       end
     end
   end

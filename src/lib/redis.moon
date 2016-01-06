@@ -237,9 +237,12 @@ M.fetch_frontend = (@, max_path_length=3) ->
         unless v == nil or v == ''
             if count < (max_path_length)
                 count += 1
+                v = library.strip(v, '/') -- remove leading and trailing slashes
                 p = p .. "/#{v}"
-                table.insert(keys, 1, 'frontend:' .. host .. p)
-                table.insert(frontends, 1, host .. p)
+                frontend = "#{host}#{p}/" -- always include a trailing slash
+                table.insert(keys, 1, "frontend:#{frontend}")
+                table.insert(frontends, 1, frontend)
+
     red = M.connect()
     return nil if red['connection_error']
     resp, err = red\mget(unpack(keys))

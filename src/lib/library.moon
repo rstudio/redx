@@ -9,8 +9,15 @@ M.log_err = (msg) ->
     ngx.log ngx.ERR, inspect(msg)
 
 M.split = (str, delim using nil) ->
-  str ..= delim
-  [part for part in str\gmatch "(.-)" .. escape_pattern delim]
+    str ..= delim
+    [part for part in str\gmatch "(.-)" .. escape_pattern delim]
+
+M.strip = (str, pattern = '%s') ->
+    sub = "^" .. pattern .. "*(.-)" .. pattern .. "*$"
+    return string.gsub(str, sub, "%1")
+
+M.trim = (str) ->
+    return M.strip(str, '%s')
 
 M.replace = (str, what, sub) ->
     what = string.gsub(what, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1") -- escape pattern
@@ -18,10 +25,10 @@ M.replace = (str, what, sub) ->
     return string.gsub(str, what, sub)
 
 M.set = (list) ->
-  set = {}
-  for _, l in ipairs(list) do
-    set[l] = true
-  return set
+    set = {}
+    for _, l in ipairs(list) do
+        set[l] = true
+    return set
 
 -- define response function
 M.response = (t) ->

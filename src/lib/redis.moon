@@ -1,3 +1,5 @@
+inspect = require('inspect')
+
 M = {}
 
 M.connect = () ->
@@ -251,7 +253,7 @@ M.fetch_frontend = (@, max_path_length=3) ->
     for i, item in pairs resp
         if type(item) == 'string'
             return { frontend: frontends[i], backend: tostring(item) }
-    library.log_err("Frontend Cache miss")
+    library.log_err("Frontend Cache miss: #{inspect(frontends)}")
     return nil
 
 M.fetch_backend = (backend) ->

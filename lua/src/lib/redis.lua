@@ -1,3 +1,4 @@
+local inspect = require('inspect')
 local M = { }
 M.connect = function()
   local redis = require("resty.redis")
@@ -563,7 +564,7 @@ M.fetch_frontend = function(self, max_path_length)
       }
     end
   end
-  library.log_err("Frontend Cache miss")
+  library.log_err("Frontend Cache miss: " .. tostring(inspect(frontends)))
   return nil
 end
 M.fetch_backend = function(backend)

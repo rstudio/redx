@@ -1,3 +1,4 @@
+local inspect = require('inspect')
 local M = { }
 M.connect = function()
   local redis = require("resty.redis")
@@ -538,9 +539,11 @@ M.fetch_frontend = function(self, max_path_length)
     if not (v == nil or v == '') then
       if count < (max_path_length) then
         count = count + 1
+        v = library.strip(v, '/')
         p = p .. "/" .. tostring(v)
-        table.insert(keys, 1, 'frontend:' .. host .. p)
-        table.insert(frontends, 1, host .. p)
+        local frontend = tostring(host) .. tostring(p) .. "/"
+        table.insert(keys, 1, "frontend:" .. tostring(frontend))
+        table.insert(frontends, 1, frontend)
       end
     end
   end
@@ -561,7 +564,7 @@ M.fetch_frontend = function(self, max_path_length)
       }
     end
   end
-  library.log_err("Frontend Cache miss")
+  library.log_err("Frontend Cache miss: " .. tostring(inspect(frontends)))
   return nil
 end
 M.fetch_backend = function(backend)

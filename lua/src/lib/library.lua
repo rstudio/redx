@@ -17,6 +17,16 @@ M.split = function(str, delim)
   end
   return _accum_0
 end
+M.strip = function(str, pattern)
+  if pattern == nil then
+    pattern = '%s'
+  end
+  local sub = "^" .. pattern .. "*(.-)" .. pattern .. "*$"
+  return string.gsub(str, sub, "%1")
+end
+M.trim = function(str)
+  return M.strip(str, '%s')
+end
 M.replace = function(str, what, sub)
   what = string.gsub(what, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
   sub = string.gsub(sub, "[%%]", "%%%%")

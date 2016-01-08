@@ -2,9 +2,9 @@
 redx
 ======
 
-Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as its data store. It was inspired by [hipache](https://github.com/samalba/hipache-nginx). It has a restful API (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends, set configurations, and more.
+Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and backends with redis as its data store. It was inspired by [hipache](https://github.com/hipache/hipache). It has a restful API (that runs within nginx itself) to manage the many-to-one relationships between frontends to backends, set configurations, and more.
 
-One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments that are nearly constantly changing their large nginx config due to cases such as elastic backends or new user signups. Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have true high availability and scalability on your load balancing layer. 
+One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments with a highly dynamic topology where backends and frontends are added/removed several times a second (ie Paas). Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have true high availability and scalability on your load balancing layer. 
 
 Project Status
 ==============

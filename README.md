@@ -6,6 +6,8 @@ Redx (or redis-nginx) is an embedded lua based approach of having a dynamic conf
 
 One of the main benefits of redx is the ability to update your nginx config without needing to reload nginx. This is useful for environments with a highly dynamic topology where backends and frontends are added/removed several times a second (ie Paas). Also, this allows you to have a single nginx config across multiple nginx servers making it easier to have true high availability and scalability on your load balancing layer. 
 
+Redx is licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+
 Project Status
 ==============
 

@@ -111,24 +111,6 @@ end
 do
   local _parent_0 = lapis.Application
   local _base_0 = {
-    cookie_attributes = function(self, name, value)
-      local path = self.req.parsed_url['path']
-      local path_parts = library.split(path, '/')
-      local p = ''
-      local count = 0
-      for k, v in pairs(path_parts) do
-        if not (v == nil or v == '') then
-          if count < (config.max_path_length) then
-            count = count + 1
-            p = p .. "/" .. tostring(v)
-          end
-        end
-      end
-      if p == '' then
-        p = '/'
-      end
-      return "Max-Age=" .. tostring(config.session_length) .. "; Path=" .. tostring(p) .. "; HttpOnly"
-    end,
     ['/'] = function(self)
       return process_response(process_request(self))
     end,

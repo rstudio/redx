@@ -18,7 +18,7 @@ _G.ngx = {
     NOTICE: 'NOTICE'
     WARN: 'WARN'
     ERR: 'ERROR'
-    headers: {}
+    header: {}
     log: (lvl, msg) ->
         print(lvl .. ": " .. msg)
     req: {
@@ -57,7 +57,7 @@ describe "stickiness plugin", ->
             cookie = base64.encode(cookie)
         return {
             req: {
-                headers: headers
+                header: headers
                 parsed_url: url.parse(u)
             }
             cookies: {
@@ -75,7 +75,7 @@ describe "stickiness plugin", ->
 
         response = plugin.post(request, session, settings)
 
-        assert.are.same(ngx.headers['Set-Cookie'], "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
+        assert.are.same(ngx.header['Set-Cookie'], "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
 
 
     it "should use existing sticky session cookie if its valid", () ->
@@ -90,7 +90,7 @@ describe "stickiness plugin", ->
 
         response = plugin.post(request, session, settings)
 
-        assert.are.same(ngx.headers['Set-Cookie'], cookie)
+        assert.are.same(ngx.header['Set-Cookie'], cookie)
 
     it "should use valid servers in the sticky session cookie", () ->
 

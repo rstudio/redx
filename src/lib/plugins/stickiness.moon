@@ -26,7 +26,7 @@ M.set_cookie = (request, server, frontend, settings) ->
 
     -- set the sticky session cookie
     ngx.log(ngx.DEBUG, "Setting sticky server: #{server} (Path=#{path})")
-    ngx.headers['Set-Cookie'] = cookie -- manually set response header
+    ngx.header['Set-Cookie'] = cookie -- manually set response header
 
 M.clear_cookie = (request, settings) ->
 

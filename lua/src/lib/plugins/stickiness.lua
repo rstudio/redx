@@ -15,7 +15,7 @@ M.set_cookie = function(request, server, frontend, settings)
   local path = M.extract_path(frontend)
   local cookie = tostring(url.escape(name)) .. "=" .. tostring(url.escape(value)) .. "; Path=" .. tostring(path) .. "; HttpOnly"
   ngx.log(ngx.DEBUG, "Setting sticky server: " .. tostring(server) .. " (Path=" .. tostring(path) .. ")")
-  ngx.headers['Set-Cookie'] = cookie
+  ngx.header['Set-Cookie'] = cookie
 end
 M.clear_cookie = function(request, settings)
   request.cookies[settings.COOKIE] = nil

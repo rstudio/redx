@@ -20,7 +20,7 @@ M.set_cookie = (server, frontend, settings) ->
 
     -- encode cookie
     name = settings.COOKIE
-    value = base64.encode(server.address)
+    value = base64.encode(server)
     path = M.extract_path(frontend) -- extract path from frontend URL
     cookie = "#{url.escape(name)}=#{url.escape(value)}; Path=#{path}; HttpOnly"
 
@@ -59,7 +59,7 @@ M.post = (request, session, settings) ->
     if session.server != nil
         current_server = M.extract_domain(session.server)
         if sticky_server != current_server
-            M.set_cookie(session.server, session.frontend, settings)
+            M.set_cookie(current_server, session.frontend, settings)
 
 M.extract_domain = (url) ->
     if not string.match(url, '/')

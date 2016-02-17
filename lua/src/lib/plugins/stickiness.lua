@@ -11,7 +11,7 @@ M.get_cookie = function(request, settings)
 end
 M.set_cookie = function(server, frontend, settings)
   local name = settings.COOKIE
-  local value = base64.encode(server.address)
+  local value = base64.encode(server)
   local path = M.extract_path(frontend)
   local cookie = tostring(url.escape(name)) .. "=" .. tostring(url.escape(value)) .. "; Path=" .. tostring(path) .. "; HttpOnly"
   ngx.log(ngx.DEBUG, "Setting sticky server: " .. tostring(value) .. " (Path=" .. tostring(path) .. ")")
@@ -40,7 +40,7 @@ M.post = function(request, session, settings)
   if session.server ~= nil then
     local current_server = M.extract_domain(session.server)
     if sticky_server ~= current_server then
-      return M.set_cookie(session.server, session.frontend, settings)
+      return M.set_cookie(current_server, session.frontend, settings)
     end
   end
 end

@@ -47,7 +47,7 @@ describe "stickiness plugin", ->
             frontend: frontend
             backend: backend
             servers: servers
-            server: servers[m]
+            server: servers[m].address
             config: {
                 shinyapps_auth: users
             }

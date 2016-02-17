@@ -38,7 +38,7 @@ end
 M.post = function(request, session, settings)
   local sticky_server = M.get_cookie(request, settings)
   if session.server ~= nil then
-    local current_server = M.extract_domain(session.server.address)
+    local current_server = M.extract_domain(session.server)
     if sticky_server ~= current_server then
       return M.set_cookie(session.server, session.frontend, settings)
     end

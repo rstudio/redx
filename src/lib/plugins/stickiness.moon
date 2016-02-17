@@ -57,7 +57,7 @@ M.post = (request, session, settings) ->
 
     -- set new sticky session cookie if changed
     if session.server != nil
-        current_server = M.extract_domain(session.server.address)
+        current_server = M.extract_domain(session.server)
         if sticky_server != current_server
             M.set_cookie(session.server, session.frontend, settings)
 

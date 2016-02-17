@@ -18,12 +18,11 @@ _G.ngx = {
     NOTICE: 'NOTICE'
     WARN: 'WARN'
     ERR: 'ERROR'
+    headers: {}
     log: (lvl, msg) ->
         print(lvl .. ": " .. msg)
     req: {
         clear_header: (h) ->
-        set_header: (h, v) ->
-            print(h, v)
     }
 }
 
@@ -74,23 +73,24 @@ describe "stickiness plugin", ->
         -- construct a session
         session = new_session('example.com/foo/', 12345, {{address: 'localhost:12345'}})
 
-        m = mock(ngx)
         response = plugin.post(request, session, settings)
-        assert.spy(m.req.set_header).was.called()
-        mock.revert(m)
+
+        assert.are.same(request.cookies['shinyapps_session'], "#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
+
 
     it "should use existing sticky session cookie if its valid", () ->
 
+        cookie = "#{base64.encode('localhost:12345')}; Path=/; HttpOnly"
+
         -- construct an authenticated request
-        request = new_request('http://example.com/foo/bar', 'localhost:12345')
+        request = new_request('http://example.com/foo/bar', cookie) 
 
         -- construct a session
-        session = new_session('example.com/', 12345, {{address: 'localhost:12345'}})
+        session = new_session('example.com/', 12345, {{address: 'localhost:12345'}, {address: 'localhost:56789'}})
 
-        m = mock(ngx)
         response = plugin.post(request, session, settings)
-        assert.spy(m.req.set_header).was.not.called()
-        mock.revert(m)
+
+        assert.are.same(request.cookies['shinyapps_session'], cookie)
 
     it "should use valid servers in the sticky session cookie", () ->
 

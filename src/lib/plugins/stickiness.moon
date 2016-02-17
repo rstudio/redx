@@ -16,17 +16,17 @@ M.get_cookie = (request, settings) ->
     else
         return nil
 
-M.set_cookie = (server, frontend, settings) ->
+M.set_cookie = (request, server, frontend, settings) ->
 
     -- encode cookie
     name = settings.COOKIE
     value = base64.encode(server)
     path = M.extract_path(frontend) -- extract path from frontend URL
-    cookie = "#{url.escape(name)}=#{url.escape(value)}; Path=#{path}; HttpOnly"
+    cookie = "#{url.escape(value)}; Path=#{path}; HttpOnly"
 
     -- set the sticky session cookie
-    ngx.log(ngx.DEBUG, "Setting sticky server: #{value} (Path=#{path})")
-    ngx.req.set_header('Set-Cookie', cookie)
+    ngx.log(ngx.DEBUG, "Setting sticky server: #{server} (Path=#{path})")
+    request.cookies[settings.COOKIE] = cookie
 
 M.clear_cookie = (request, settings) ->
 
@@ -59,7 +59,7 @@ M.post = (request, session, settings) ->
     if session.server != nil
         current_server = M.extract_domain(session.server)
         if sticky_server != current_server
-            M.set_cookie(current_server, session.frontend, settings)
+            M.set_cookie(request, current_server, session.frontend, settings)
 
 M.extract_domain = (url) ->
     if not string.match(url, '/')

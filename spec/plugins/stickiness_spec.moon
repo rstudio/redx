@@ -75,12 +75,12 @@ describe "stickiness plugin", ->
 
         response = plugin.post(request, session, settings)
 
-        assert.are.same(request.cookies['shinyapps_session'], "#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
+        assert.are.same(ngx.headers['Set-Cookie'], "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
 
 
     it "should use existing sticky session cookie if its valid", () ->
 
-        cookie = "#{base64.encode('localhost:12345')}; Path=/; HttpOnly"
+        cookie = "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/; HttpOnly"
 
         -- construct an authenticated request
         request = new_request('http://example.com/foo/bar', cookie) 
@@ -90,7 +90,7 @@ describe "stickiness plugin", ->
 
         response = plugin.post(request, session, settings)
 
-        assert.are.same(request.cookies['shinyapps_session'], cookie)
+        assert.are.same(ngx.headers['Set-Cookie'], cookie)
 
     it "should use valid servers in the sticky session cookie", () ->
 

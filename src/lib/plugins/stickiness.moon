@@ -22,11 +22,11 @@ M.set_cookie = (request, server, frontend, settings) ->
     name = settings.COOKIE
     value = base64.encode(server)
     path = M.extract_path(frontend) -- extract path from frontend URL
-    cookie = "#{url.escape(value)}; Path=#{path}; HttpOnly"
+    cookie = "#{url.escape(name)}=#{url.escape(value)}; Path=#{path}; HttpOnly"
 
     -- set the sticky session cookie
     ngx.log(ngx.DEBUG, "Setting sticky server: #{server} (Path=#{path})")
-    request.cookies[settings.COOKIE] = cookie
+    ngx.headers['Set-Cookie'] = cookie -- manually set response header
 
 M.clear_cookie = (request, settings) ->
 

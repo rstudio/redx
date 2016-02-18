@@ -10,9 +10,13 @@ M = {}
 M.get_cookie = (request, settings) ->
 
     -- get the sticky session cookie
-    cookie = request.cookies[settings.COOKIE]
-    if cookie != nil
-        return base64.decode(cookie)
+    raw = request.cookies[settings.COOKIE]
+    if raw != nil
+        ok, cookie = pcall(base64.decode, raw)
+        ngx.log(ngx.WARN, "Error decoding cookie: #{raw}")
+        if ok
+            return cookie
+        return nil
     else
         return nil
 

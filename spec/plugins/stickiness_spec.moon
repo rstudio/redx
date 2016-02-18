@@ -34,14 +34,13 @@ describe "stickiness plugin", ->
 
     -- initialize plugin settings
     settings = {
-        COOKIE: 'shinyapps_session'
+        COOKIE: 'session'
     }
 
     new_session = (frontend, backend, servers) ->
         m = math.huge
         for k in pairs(servers)
             m = math.min(k, m)
-
         return {
             frontend: frontend
             backend: backend
@@ -53,65 +52,73 @@ describe "stickiness plugin", ->
         }
 
     new_request = (u, cookie=nil) ->
-        if cookie != nil
-            cookie = base64.encode(cookie)
         return {
             req: {
                 header: headers
                 parsed_url: url.parse(u)
             }
             cookies: {
-                shinyapps_session: cookie
+                session: cookie
             }
         }
 
     it "should set sticky session cookie", () ->
 
-        -- construct an authenticated request
+        -- construct request
         request = new_request('http://example.com/foo/derp')
 
-        -- construct a session
-        session = new_session('example.com/foo/', 12345, {{address: 'localhost:12345'}})
+        -- construct session
+        session = new_session('example.com/foo/', 12345, {{address: 'fake-server:8000'}})
 
         response = plugin.post(request, session, settings)
 
-        assert.are.same(ngx.header['Set-Cookie'], "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/foo/; HttpOnly")
-
+        cookie = "session=#{url.escape(base64.encode('fake-server:8000'))}; Path=/foo/; HttpOnly"
+        assert.are.same(ngx.header['Set-Cookie'], cookie)
 
     it "should use existing sticky session cookie if its valid", () ->
 
-        cookie = "shinyapps_session=#{base64.encode('localhost:12345')}; Path=/; HttpOnly"
-
-        -- construct an authenticated request
-        request = new_request('http://example.com/foo/bar', cookie) 
+        -- construct request
+        request = new_request('http://example.com/foo/bar', base64.encode('fake-server:8000')) 
 
         -- construct a session
-        session = new_session('example.com/', 12345, {{address: 'localhost:12345'}, {address: 'localhost:56789'}})
+        session = new_session('example.com/', 12345, {{address: 'fake-server:8000'}, {address: 'another-fake-server:8000'}})
 
         response = plugin.post(request, session, settings)
-
-        assert.are.same(ngx.header['Set-Cookie'], cookie)
+        assert.are.same(ngx.header['Set-Cookie'], nil)
 
     it "should use valid servers in the sticky session cookie", () ->
 
-        -- construct an authenticated request
-        request = new_request('http://example.com/', 'localhost:12345')
+        -- construct request
+        request = new_request('http://example.com/', base64.encode('fake-server:8000'))
 
-        -- construct a session
-        session = new_session('example.com', 12345, {{address: 'localhost:12345'}})
+        -- construct session
+        session = new_session('example.com', 12345, {{address: 'fake-server:8000'}})
 
         result = plugin.balance(request, session, settings)
-        assert.are.same({address: 'localhost:12345'}, result)
+        assert.are.same({address: 'fake-server:8000'}, result)
+
+    it "should ignore invalid values in the session cookie", () ->
+
+        -- construct request
+        request = new_request('http://example.com/', "garbage cookie")
+
+        -- construct session
+        session = new_session('example.com', 12345, {{address: 'fake-server:8000'}})
+
+        result = plugin.balance(request, session, settings)
+        assert.are.same({{address: 'fake-server:8000'}}, result)
+        assert.are.same(request.cookies['session'], nil)
+
 
     it "should ignore invalid servers in the sticky session cookie", () ->
 
-        -- construct an authenticated request
-        request = new_request('http://example.com/', 'localhost:56789')
+        -- construct a request
+        request = new_request('http://example.com/', base64.encode('another-fake-server:8000'))
 
         -- construct a session
-        session = new_session('example.com', 12345, {{address: 'localhost:12345'}})
+        session = new_session('example.com', 12345, {{address: 'fake-server:8000'}})
 
         result = plugin.balance(request, session, settings)
-        assert.are.same({{address: 'localhost:12345'}}, result)
-        assert.are.same(request.cookies['shinyapps_session'], nil)
+        assert.are.same({{address: 'fake-server:8000'}}, result)
+        assert.are.same(request.cookies['session'], nil)
 

@@ -89,22 +89,8 @@ process_response = (response) ->
         ngx.exit(response['status'])
     else
         return layout: false
-        
 
 class extends lapis.Application
-    cookie_attributes: (name, value) =>
-        path = @req.parsed_url['path']
-        path_parts = library.split path, '/'
-        p = ''
-        count = 0
-        for k,v in pairs path_parts do
-            unless v == nil or v == ''
-                if count < (config.max_path_length)
-                    count += 1
-                    p = p .. "/#{v}"
-        if p == ''
-            p = '/'
-        "Max-Age=#{config.session_length}; Path=#{p}; HttpOnly"
 
     '/': =>
         process_response(process_request(@))

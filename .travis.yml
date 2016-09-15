@@ -17,7 +17,7 @@ install:
   - sudo luarocks install luabitop 1.0.2-2
   - sudo luarocks install luasec 0.5-2 OPENSSL_DIR=/usr OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu 
   - sudo luarocks install luafilesystem 1.6.2-2
-  - sudo luarocks install busted 2.0.rc11-0
+  - sudo luarocks install busted 2.0.rc12-1
   - sudo luarocks install lua-cjson 2.1.0-1
   - sudo luarocks install lapis 1.0.4-1
   - sudo luarocks install moonscript 0.2.6-1

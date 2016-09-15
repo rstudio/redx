@@ -55,7 +55,7 @@ process_request = (request) ->
                         session['server'] = session['servers'][1]['address']
                         break
                     elseif session['servers'] == nil or #session['servers'] == 0
-                        -- all servers were filterd out, do not proxy
+                        -- all servers were filtered out, do not proxy
                         session['server'] = nil
                         break
 

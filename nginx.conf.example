@@ -36,6 +36,7 @@ http {
 
     listen 8080;
     lua_code_cache off;
+    lua_need_request_body on;
 
     proxy_read_timeout 300;
     proxy_connect_timeout 3;

@@ -1,6 +1,5 @@
-.vagrant/
-*.swp
+lua/
+luacov.stats.out
 logs/
-nginx.conf.compiled
-*.lock
 nginx.conf
+nginx.conf.compiled

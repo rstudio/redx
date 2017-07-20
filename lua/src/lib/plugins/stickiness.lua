@@ -2,9 +2,14 @@ local url = require('socket.url')
 local base64 = require('base64')
 local M = { }
 M.get_cookie = function(request, settings)
-  local cookie = request.cookies[settings.COOKIE]
-  if cookie ~= nil then
-    return base64.decode(cookie)
+  local raw = request.cookies[settings.COOKIE]
+  if raw ~= nil then
+    local ok, cookie = pcall(base64.decode, raw)
+    ngx.log(ngx.WARN, "Error decoding cookie: " .. tostring(raw))
+    if ok then
+      return cookie
+    end
+    return nil
   else
     return nil
   end

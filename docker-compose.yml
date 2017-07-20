@@ -1,0 +1,15 @@
+version: '3.2'
+services:
+  redx:
+    build:
+      context: .
+    volumes:
+      - .:/opt/redx
+    working_dir: /opt/redx
+    ports:
+      - 6080:8080
+      - 6081:8081
+    links:
+      - redis
+  redis:
+    image: redis:2.8

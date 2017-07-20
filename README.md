@@ -65,42 +65,18 @@ A [redis](http://redis.io/) server
 Setup Dev Environment
 =====================
 
-Setup and start vagrant
+Setup and start Docker
 
-```bash
-  vagrant plugin install vagrant-berkshelf --plugin-version '>= 2.0.1'
-  vagrant plugin install vagrant-omnibus
-  vagrant up
-```
-
-The redx code on your local workstation is run within vagrant (due to sharing the redx directory with vagrant at 
-`/home/vagrant/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. 
+The redx code on your local workstation is run within Docker (due to sharing the redx directory with Docker at 
+`/opt/redx`). As you make code changes, they should take affect immediately and do not require reloading nginx. 
 You will however need to reload nginx when you change the nginx config located 
-`vagrant://etc/nginx/sites-available/redx.conf`. To see redx logs, see `/var/log/nginx/[access,error].log`
-
-## Git Hooks
-It is recommended that you setup two git hooks.
-
-The pre-commit hook (`./git/hooks/pre-commit`) should be used to ensure you don't make changes to the moonscript code 
-without recompiling the lua code.
-```bash
-#!/bin/sh
-
-moonc -t lua/ .
-```
-
-The pre-push hook (`./git/hooks/pre-push`) should be used to ensure you've run all tests and they all pass.
-```bash
-#!/bin/sh
-
-busted lua/spec/
-```
+`/usr/local/openresty/nginx/conf/nginx.conf`. To see redx logs, see `/var/log/nginx/[access,error].log`
 
 Testing
 =======
 
 Redx uses a testing framework, [busted](http://olivinelabs.com/busted/), to run integration tests. To run these tests, 
-execute `busted lua/spec`. Continuous integration is setup with [travis ci](https://travis-ci.org/rstudio/redx).
+execute `/usr/local/openresty/luajit/bin/busted lua/spec`. Continuous integration is setup with [travis ci](https://travis-ci.org/rstudio/redx).
 
 Configuration
 =============

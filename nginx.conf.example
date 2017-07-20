@@ -7,15 +7,21 @@ events {
 }
 
 http {
-  lua_package_path ";;./lua/src/lib/plugins/?.lua;./lua/src/lib/?.lua;./lua/conf/?.lua;./lua/src/bin/?.lua";
+  lua_package_path ";;/opt/redx/lua/src/lib/plugins/?.lua;/opt/redx/lua/src/lib/?.lua;/opt/redx/lua/conf/?.lua;/opt/redx/lua/src/bin/?.lua";
 
-  resolver 8.8.8.8;
+  resolver 127.0.0.11;
 
-  init_by_lua_file './lua/src/bin/init_redx.lua';
+  init_by_lua_file '/opt/redx/lua/src/bin/init_redx.lua';
 
   upstream fallback {
     server localhost:7700;
   }
+
+  client_body_temp_path /usr/local/openresty/nginx/client_body_temp;
+  fastcgi_temp_path /usr/local/openresty/nginx/fastcgi_temp;
+  proxy_temp_path /usr/local/openresty/nginx/proxy_temp;
+  scgi_temp_path /usr/local/openresty/nginx/scgi_temp;
+  uwsgi_temp_path /usr/local/openresty/nginx/uwsgi_temp;
 
   server {
     # API

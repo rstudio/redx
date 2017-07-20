@@ -1,6 +1,9 @@
 local M = { }
 local escape_pattern
-escape_pattern = require("lapis.util").escape_pattern
+do
+  local _obj_0 = require("lapis.util")
+  escape_pattern = _obj_0.escape_pattern
+end
 M.log = function(msg)
   return ngx.log(ngx.NOTICE, inspect(msg))
 end

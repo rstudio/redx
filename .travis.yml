@@ -1,41 +1,15 @@
-language: erlang
-
-env:
-  - LUA="luajit"
+sudo: required
 
 services:
-  - redis-server
+  - docker
 
-branches:
-  only:
-    - master
-
-install:
-  - sudo apt-get update
-  - sudo apt-get install luajit luarocks
-  - sudo apt-get install libreadline-dev libncurses5-dev libpcre3-dev libssl-dev perl make
-  - sudo luarocks install luabitop 1.0.2-2
-  - sudo luarocks install luasec 0.5-2 OPENSSL_DIR=/usr OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu 
-  - sudo luarocks install luafilesystem 1.6.2-2
-  - sudo luarocks install busted 2.0.rc12-1
-  - sudo luarocks install lua-cjson 2.1.0-1
-  - sudo luarocks install lapis 1.0.4-1
-  - sudo luarocks install moonscript 0.2.6-1
-  - sudo luarocks install inspect 2.0-1
-  - wget http://openresty.org/download/ngx_openresty-1.7.2.1.tar.gz
-  - tar xzvf ngx_openresty-1.7.2.1.tar.gz
-  - cd ngx_openresty-1.7.2.1/
-  - ./configure --with-luajit
-  - make
-  - sudo make install
-  - cd -
-  - cp nginx.conf.example nginx.conf
-
-before_script:
-  - "lapis server --trace &"
+before_install:
+  - make docker-build
+  - make docker-up
 
 script:
-  - "busted lua/spec"
+  - make lua
+  - make test
 
 after_script:
-  - "sudo killall nginx"
+  - make docker-down

@@ -1,7 +1,7 @@
 M = {}
 
 -- redis host
-M.redis_host = '127.0.0.1'
+M.redis_host = 'redis'
 -- redis port
 M.redis_port = '6379'
 -- redis password

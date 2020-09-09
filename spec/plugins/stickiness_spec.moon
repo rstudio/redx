@@ -72,7 +72,7 @@ describe "stickiness plugin", ->
 
         response = plugin.post(request, session, settings)
 
-        cookie = "session=#{url.escape(base64.encode('fake-server:8000'))}; Path=/foo/; HttpOnly"
+        cookie = "session=#{url.escape(base64.encode('fake-server:8000'))}; Path=/foo/; HttpOnly; SameSite=None; Secure"
         assert.are.same(ngx.header['Set-Cookie'], cookie)
 
     it "should use existing sticky session cookie if its valid", () ->

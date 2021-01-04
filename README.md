@@ -1,7 +1,7 @@
 NOTICE
 ======
 
-This project has been is no longer maintained and has been archived. This repository will be removed on March 4th, 2021.
+This project is no longer maintained and has been archived. This repository will be deleted on March 4th, 2021.
 
 ---------
 

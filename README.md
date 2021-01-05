@@ -1,6 +1,13 @@
-[![Build Status](https://travis-ci.org/rstudio/redx.svg)](https://travis-ci.org/rstudio/redx)
-redx
+NOTICE
 ======
+
+This project is no longer maintained and has been archived. This repository will be deleted on March 4th, 2021.
+
+---------
+
+
+redx
+====
 
 Redx (or redis-nginx) is an embedded lua based approach of having a dynamic configuration of nginx of frontends and
 backends with redis as its data store. It was inspired by [hipache](https://github.com/hipache/hipache). It has a
